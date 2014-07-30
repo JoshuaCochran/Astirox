@@ -34,7 +34,7 @@ void Game::Start(void)
 
 	SFMLSoundProvider soundProvider;
 	
-	currentMap = new Map("mine.lua");
+	currentMap = new Map("mine.tmx");
 	/*tmx::MapLoader m1("data/maps");
 	m1.Load("mine.tmx");*/
 

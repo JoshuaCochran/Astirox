@@ -48,6 +48,8 @@ private:
 	int mobMax;
 	int movesSinceSpawn;
 
+	sf::RectangleShape* test;
+
 	std::vector<TeleportInfo> portals;
 	
 	std::vector<sf::Vector2f> spawnLocs;
@@ -58,6 +60,8 @@ private:
 
 	void AddSpawnCandidate(std::string filename, double rarity);
 	void SpawnMonster();
+
+	bool CheckSpawnIntersection(std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject>>::_Val_types>::_Myt> mo, int& totalRarity, std::vector<std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject >> ::_Val_types>::_Myt >> &alreadyChecked);
 
 	void AddTargetMap(std::string filename);
 	void AddExitPosX(int posx);

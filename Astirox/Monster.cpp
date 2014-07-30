@@ -72,7 +72,7 @@ _velocity(0), _maxVelocity(600.0f)
 	}
 	assert(IsLoaded());
 
-	GetSprite().setOrigin(GetSprite().getLocalBounds().width / 2, GetSprite().getLocalBounds().height / 2);
+	//GetSprite().setOrigin(GetSprite().getLocalBounds().width / 2, GetSprite().getLocalBounds().height / 2);
 
 	int hp_modifier = 1;
 	int damage_modifier = 1;

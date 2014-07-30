@@ -12,7 +12,55 @@ Map::Map()
 
 Map::Map(std::string filename)
 {
-	map_lua_state = luaL_newstate();
+	//Pure tmx map method
+
+	tmxFile = filename;
+	mapLoader = new tmx::MapLoader("data/maps");
+	mapLoader->Load(tmxFile);
+
+	sf::Vector2f spawnZone(16 * 4.0f, 16 * 4.0f);
+	for (auto layer = GetMapLoader()->GetLayers().begin(); layer != GetMapLoader()->GetLayers().end(); ++layer)
+	{
+		if (layer->name == "MonsterSpawn")
+		{
+			std::vector<std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject>>::_Val_types>::_Myt>> checked;
+			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
+			{ 
+				bool monsterInSpawnZone = false;
+				sf::Rect<float> spawnZone(sf::Vector2f(object->GetPosition().x - 32, object->GetPosition().y - 32), sf::Vector2f(80, 80));
+				for (int i = 0; i < spawnedMonsters.size(); i++)
+				{
+					sf::Rect<float> mBB = spawnedMonsters[i]->GetBoundingRect();
+					if (mBB.intersects(spawnZone))
+					{
+						monsterInSpawnZone = true;
+					}
+				}
+				if (!monsterInSpawnZone)
+				{
+					int rarity = boost::lexical_cast<int>(object->GetPropertyString("rarity"));
+					bool repeat = false;
+					spawnCandidates.push_back(object->GetName());
+					CheckSpawnIntersection(object, rarity, checked);
+					candidateRarities.push_back(boost::lexical_cast<int>(object->GetPropertyString("rarity")) / rarity);
+					boost::random::discrete_distribution<> dist(candidateRarities.begin(), candidateRarities.end());
+					std::string monsterToSpawn = spawnCandidates[dist(Game::rng)];
+					Monster* mon = new Monster(monsterToSpawn);
+					mon->SetPosition(object->GetPosition());
+					spawnedMonsters.push_back(mon);
+
+					for (int i = 0; i < spawnCandidates.size(); i++)
+						spawnCandidates.pop_back();
+					for (int i = 0; i < candidateRarities.size(); i++)
+						candidateRarities.pop_back();
+				}
+			}
+		}
+	}
+
+	//Lua map method
+
+	/*map_lua_state = luaL_newstate();
 	luaL_openlibs(map_lua_state);
 	int ret = luaL_dofile(map_lua_state, ("data/scripts/maps/" + filename).c_str());
 	if (ret != 0)
@@ -64,7 +112,7 @@ Map::Map(std::string filename)
 			<< portals[i].targetPos.y << std::endl;
 	}
 
-	//movesSinceSpawn = 0;	
+	//movesSinceSpawn = 0;*/
 }
 
 Map::~Map()
@@ -80,6 +128,40 @@ Map::~Map()
 tmx::MapLoader* Map::GetMapLoader()
 {
 	return mapLoader;
+}
+
+bool Map::CheckSpawnIntersection(std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject>>::_Val_types>::_Myt> mo, int& totalRarity, std::vector<std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject >> ::_Val_types>::_Myt >> &alreadyChecked)
+{
+	bool newIntersection = false;
+	for (auto layer = GetMapLoader()->GetLayers().begin(); layer != GetMapLoader()->GetLayers().end(); ++layer)
+	{
+		if (layer->name == "MonsterSpawn")
+		{
+			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
+			{
+				if (object->Contains(mo->GetPosition()) && mo != object)
+				{
+					for (int i = 0; i < alreadyChecked.size(); i++)
+					{
+						if (object == alreadyChecked[i])
+						{
+							newIntersection = true;
+						}
+					}
+					if (alreadyChecked.size() == 0) newIntersection = true;
+				}
+				if (newIntersection)
+				{
+					spawnCandidates.push_back(object->GetName());
+					candidateRarities.push_back(boost::lexical_cast<int>(object->GetPropertyString("rarity")));
+					alreadyChecked.push_back(object);
+					totalRarity += boost::lexical_cast<int>(object->GetPropertyString("rarity"));
+					if (alreadyChecked.size() < layer->objects.size()) CheckSpawnIntersection(mo, totalRarity, alreadyChecked);
+				}
+			}
+		}
+	}
+	return true;
 }
 
 void Map::DrawAll(sf::RenderWindow& renderWindow)
@@ -108,11 +190,11 @@ void Map::AddSpawnCandidate(std::string filename, double rarity)
 }
 void Map::CheckSpawn()
 {
-	if (spawnedMonsters.size() < mobMax && movesSinceSpawn >= 20)
+	/*if (spawnedMonsters.size() < mobMax && movesSinceSpawn >= 20)
 	{
 		SpawnMonster();
 		movesSinceSpawn = 0;
-	}
+	}*/
 }
 void Map::SpawnMonster()
 {
