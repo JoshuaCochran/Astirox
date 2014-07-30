@@ -1,0 +1,78 @@
+#include "stdafx.h"
+#include "GameObjectManager.h"
+#include "Game.h"
+
+GameObjectManager::GameObjectManager()
+{
+}
+
+GameObjectManager::~GameObjectManager()
+{
+	std::for_each(_gameObjects.begin(), _gameObjects.end(), GameObjectDeallocator());
+}
+
+void GameObjectManager::Add(std::string name, VisibleGameObject* gameObject)
+{
+	_gameObjects.insert(std::pair<std::string, VisibleGameObject*>(name, gameObject));
+}
+
+void GameObjectManager::Remove(std::string name)
+{
+	std::map<std::string, VisibleGameObject*>::iterator results = _gameObjects.find(name);
+	if (results != _gameObjects.end())
+	{
+		delete results->second;
+		results->second = nullptr;
+		_gameObjects.erase(results);
+	}
+}
+
+VisibleGameObject* GameObjectManager::Get(std::string name) const
+{
+	std::map<std::string, VisibleGameObject*>::const_iterator results = _gameObjects.find(name);
+	if (results == _gameObjects.end())
+		return NULL;
+	return results->second;
+}
+
+int GameObjectManager::GetObjectCount() const
+{
+	return _gameObjects.size();
+}
+
+void GameObjectManager::DrawAll(sf::RenderWindow& renderWindow)
+{
+	std::map<std::string, VisibleGameObject*>::const_iterator itr = _gameObjects.begin();
+	while (itr != _gameObjects.end())
+	{
+		itr->second->Draw(renderWindow);
+		itr++;
+	}
+}
+
+void GameObjectManager::UpdateAll()
+{
+	std::map<std::string, VisibleGameObject*>::const_iterator itr = _gameObjects.begin();
+	float timeDelta = clock.restart().asSeconds();
+
+	while (itr != _gameObjects.end())
+	{
+		itr->second->Update(timeDelta);
+		itr++;
+	}
+}
+
+void GameObjectManager::RemoveMonster(Monster& monster)
+{
+	std::stringstream ss;
+	for (int i = 1; i < Game::MONSTER_LIMIT + 1; i++)
+	{
+		ss << "Monster" << i;
+
+		if (_gameObjects.find(ss.str())->second == &monster)
+		{
+			Remove(ss.str());
+		}
+		ss.str(std::string());
+	}
+}
