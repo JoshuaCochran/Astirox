@@ -39,6 +39,7 @@ public:
 
 	static lua_State* lua_state;
 	static Map* currentMap;
+	static std::vector<Map*> recentlyVisitedMaps;
 
 	static boost::mt19937 rng;
 

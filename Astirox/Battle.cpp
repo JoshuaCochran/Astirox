@@ -15,7 +15,7 @@ Battle::Battle(Player& player1, Monster& monster1)
 	m_player->SetPosition(Game::SCREEN_WIDTH / 2 + 100, Game::SCREEN_HEIGHT / 2);
 	m_player->SetScale(3, 3);
 
-	m_monster->SetPosition(Game::SCREEN_WIDTH / 2 - 200, Game::SCREEN_HEIGHT / 2 - 10);
+	m_monster->SetPosition(Game::SCREEN_WIDTH / 2 - 200, Game::SCREEN_HEIGHT / 2);
 	m_monster->SetScale(3, 3);
 	
 	damageText.setString("");

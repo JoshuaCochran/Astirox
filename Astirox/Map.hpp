@@ -31,6 +31,7 @@ public:
 	void UpdateMonsters();
 	tmx::MapLoader* GetMapLoader();
 	std::vector<Monster*>& GetSpawnedMonsters();
+	std::vector<Equipment*>& GetEquipmentOnFloor();
 
 	int GetMovesSinceSpawn();
 	void AddMove();
@@ -39,6 +40,7 @@ public:
 	void UsePortal(Player& player, TeleportInfo portal);
 
 	int GetMaxMobs();
+	std::string GetTMXFile();
 	void CheckSpawn();
 	
 private:

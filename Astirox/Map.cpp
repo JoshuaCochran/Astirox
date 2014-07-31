@@ -39,14 +39,14 @@ Map::Map(std::string filename)
 				if (!monsterInSpawnZone)
 				{
 					int rarity = boost::lexical_cast<int>(object->GetPropertyString("rarity"));
-					bool repeat = false;
 					spawnCandidates.push_back(object->GetName());
 					CheckSpawnIntersection(object, rarity, checked);
 					candidateRarities.push_back(boost::lexical_cast<int>(object->GetPropertyString("rarity")) / rarity);
 					boost::random::discrete_distribution<> dist(candidateRarities.begin(), candidateRarities.end());
 					std::string monsterToSpawn = spawnCandidates[dist(Game::rng)];
 					Monster* mon = new Monster(monsterToSpawn);
-					mon->SetPosition(object->GetPosition());
+					sf::Vector2f objectPos(object->GetPosition().x + 8.0f, object->GetPosition().y + 8.0f);
+					mon->SetPosition(objectPos);
 					spawnedMonsters.push_back(mon);
 
 					for (int i = 0; i < spawnCandidates.size(); i++)
@@ -141,14 +141,17 @@ bool Map::CheckSpawnIntersection(std::_Vector_iterator<std::_Vector_val<std::_Ve
 			{
 				if (object->Contains(mo->GetPosition()) && mo != object)
 				{
-					for (int i = 0; i < alreadyChecked.size(); i++)
+					if (alreadyChecked.size() == 0) newIntersection = true;
+					else
 					{
-						if (object == alreadyChecked[i])
+						for (int i = 0; i < alreadyChecked.size(); i++)
 						{
-							newIntersection = true;
+							if (object == alreadyChecked[i])
+							{
+								newIntersection = true;
+							}
 						}
 					}
-					if (alreadyChecked.size() == 0) newIntersection = true;
 				}
 				if (newIntersection)
 				{
@@ -222,6 +225,10 @@ int Map::GetMaxMobs()
 {
 	return mobMax;
 }
+std::string Map::GetTMXFile()
+{
+	return tmxFile;
+}
 
 int Map::GetMovesSinceSpawn()
 {
@@ -270,4 +277,9 @@ void Map::UsePortal(Player& player, TeleportInfo portal)
 	delete Game::currentMap;
 	Game::currentMap = new Map(portal.targetMap);
 	player.SetPosition(portal.targetPos);
+}
+
+std::vector<Equipment*>& Map::GetEquipmentOnFloor()
+{
+	return equipmentOnFloor;
 }
