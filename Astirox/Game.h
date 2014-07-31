@@ -28,11 +28,12 @@ public:
 	static GuiObjectManager& GetGuiObjectManager();
 	static AnimationManager& GetAnimationManager();
 
-	static void startBattle(Player& player1, Monster& monster1);
+	static void startBattle(Battle* fight);
 	static Battle* battle;
 
 	const static int SCREEN_WIDTH = 1024;
 	const static int SCREEN_HEIGHT = 768;
+	static sf::View view;
 	const static int MONSTER_LIMIT = 5;
 
 	static std::string DIFFICULTY_SETTING; 
@@ -59,6 +60,8 @@ private:
 		Uninitialized, ShowingSplash, Paused,
 		ShowingMenu, Playing, Fight, Exiting
 	};
+
+	static sf::Clock frameTime;
 
 	static GameState _gameState;
 	static sf::RenderWindow _mainWindow;

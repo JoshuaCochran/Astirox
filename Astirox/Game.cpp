@@ -21,6 +21,11 @@ void Game::Start(void)
 
 	_mainWindow.create(sf::VideoMode(Game::SCREEN_WIDTH, Game::SCREEN_HEIGHT, 32), "Astirox");
 	_mainWindow.setFramerateLimit(60);
+	//_mainWindow.setVerticalSyncEnabled(true);
+	view.reset(sf::FloatRect(24, 24, 256, 192));
+	view.setViewport(sf::FloatRect(0.f, 0.f, 0.75f, 1.f));
+
+	frameTime.restart();
 
 	_mainWindow.setKeyRepeatEnabled(false);
 
@@ -43,6 +48,7 @@ void Game::Start(void)
 
 	Player *player = new Player();
 	player->SetPosition(24, 24);
+
 
 	_guiObjectManager.Init();
 
@@ -103,7 +109,8 @@ void Game::GameLoop()
 	_mainWindow.pollEvent(currentEvent);
 	Player* player1 = dynamic_cast<Player*>(Game::GetGameObjectManager().Get("Player"));
 	_gameObjectManager.Get("cursor")->SetPosition(static_cast<sf::Vector2f>(sf::Mouse::getPosition(_mainWindow)));
-
+	float offset = 1;
+	frameTime.restart();
 	switch (_gameState)
 	{
 		case Game::ShowingMenu:
@@ -117,8 +124,20 @@ void Game::GameLoop()
 			break;
 
 		case Game::Playing:
+			//view.reset(sf::FloatRect(24, 24, 256, 192));
+			/*if (view.getCenter().x < player1->GetPosition().x)
+				view.setCenter(view.getCenter().x + offset, view.getCenter().y);
+			else if (view.getCenter().x > player1->GetPosition().x)
+				view.setCenter(view.getCenter().x - offset, view.getCenter().y);
+			if (view.getCenter().y < player1->GetPosition().y)
+				view.setCenter(view.getCenter().x, view.getCenter().y + offset);
+			else if (view.getCenter().y > player1->GetPosition().y)
+				view.setCenter(view.getCenter().x, view.getCenter().y - offset);
+			//view.setCenter(player1->GetPosition().x, player1->GetPosition().y);
+			//view.setViewport(sf::FloatRect(0.f, 0.f, 0.5f, 1.f));
+			_mainWindow.setView(view);//*/
+
 			_mainWindow.clear(sf::Color(sf::Color(0, 0, 0)));
-			currentMap->DrawAll(_mainWindow);
 			if (currentEvent.type == sf::Event::KeyPressed && currentEvent.key.code == sf::Keyboard::Z)
 				player1->PickUpItem();
 
@@ -127,13 +146,28 @@ void Game::GameLoop()
 
 			if (player1->moveto(*currentMap, currentEvent))
 			{
-				if (_gameState == Fight) break;
+				if (_gameState == Fight)
+				{
+					_mainWindow.setView(_mainWindow.getDefaultView());
+					break;
+				}
 				currentMap->UpdateMonsters();
-				if (_gameState == Fight) break;
+				if (_gameState == Fight)
+				{
+					_mainWindow.setView(_mainWindow.getDefaultView());
+					break;
+				}
 				currentMap->CheckSpawn();
 			}
+			Game::view.setCenter(player1->GetPosition().x, player1->GetPosition().y);
+			_mainWindow.setView(view);
+			currentMap->DrawAll(_mainWindow);
+			_gameObjectManager.Get("Player")->Draw(_mainWindow);
+			
+			_mainWindow.setView(_mainWindow.getDefaultView());
 			_guiObjectManager.DrawOOCGUI(_mainWindow, currentEvent, *player1);
-			_gameObjectManager.DrawAll(_mainWindow);
+			_gameObjectManager.Get("cursor")->Draw(_mainWindow);
+
 
 			//wordWrap("This is a test of the word wrap function. So, here is a very long string that will hopefully demonstrate that the function is, in fact, working as intended so that I may go about working on other problems.");
 			_mainWindow.display();
@@ -181,7 +215,7 @@ void Game::GameLoop()
 			else battle->GetMonster()->SetTransparency(255);
 
 			// For one second after monster attack cause player to flash indicating hit.
-			if (battle->GetSpellFrameClock().getElapsedTime().asSeconds() < 1 && !battle->GetPlayerAtt())
+			if (battle->GetSpellFrameClock().getElapsedTime().asSeconds() < 1 && !battle->GetPlayerAtt() && battle->GetDamageText().getString() != "MISS" && battle->GetDamageText().getString() != "")
 			{
 				battle->GetPlayer()->SetTransparency(255 * (battle->GetSpellFrameClock().getElapsedTime().asMilliseconds() % 2));
 			}
@@ -250,10 +284,10 @@ void Game::ShowMenu()
 	}
 }
 
-void Game::startBattle(Player& player1, Monster& monster1)
+void Game::startBattle(Battle* fight)
 {
+	battle = fight;
 	_gameState = Game::Fight;
-	battle = new Battle(player1, monster1);
 }
 
 void Game::wordWrap(std::string text)
@@ -294,3 +328,5 @@ std::string Game::DIFFICULTY_SETTING;
 lua_State* Game::lua_state;
 Map* Game::currentMap;
 std::vector<Map*> Game::recentlyVisitedMaps;
+sf::View Game::view;
+sf::Clock Game::frameTime;

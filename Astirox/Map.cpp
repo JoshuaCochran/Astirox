@@ -38,10 +38,15 @@ Map::Map(std::string filename)
 				}
 				if (!monsterInSpawnZone)
 				{
-					int rarity = boost::lexical_cast<int>(object->GetPropertyString("rarity"));
-					spawnCandidates.push_back(object->GetName());
+					++mobMax;
+					double rarity = boost::lexical_cast<int>(object->GetPropertyString("rarity"));
 					CheckSpawnIntersection(object, rarity, checked);
-					candidateRarities.push_back(boost::lexical_cast<int>(object->GetPropertyString("rarity")) / rarity);
+					spawnCandidates.push_back(object->GetName());
+					candidateRarities.push_back(boost::lexical_cast<double>(object->GetPropertyString("rarity")));
+					for (int i = 0; i < candidateRarities.size(); i++)
+					{
+						candidateRarities[i] = candidateRarities[i] / rarity;
+					}
 					boost::random::discrete_distribution<> dist(candidateRarities.begin(), candidateRarities.end());
 					std::string monsterToSpawn = spawnCandidates[dist(Game::rng)];
 					Monster* mon = new Monster(monsterToSpawn);
@@ -130,7 +135,7 @@ tmx::MapLoader* Map::GetMapLoader()
 	return mapLoader;
 }
 
-bool Map::CheckSpawnIntersection(std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject>>::_Val_types>::_Myt> mo, int& totalRarity, std::vector<std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject >> ::_Val_types>::_Myt >> &alreadyChecked)
+bool Map::CheckSpawnIntersection(std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject>>::_Val_types>::_Myt>& mo, double& totalRarity, std::vector<std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject >> ::_Val_types>::_Myt >>& alreadyChecked)
 {
 	bool newIntersection = false;
 	for (auto layer = GetMapLoader()->GetLayers().begin(); layer != GetMapLoader()->GetLayers().end(); ++layer)
@@ -193,27 +198,53 @@ void Map::AddSpawnCandidate(std::string filename, double rarity)
 }
 void Map::CheckSpawn()
 {
-	/*if (spawnedMonsters.size() < mobMax && movesSinceSpawn >= 20)
+	if (spawnedMonsters.size() < mobMax && movesSinceSpawn >= 20)
 	{
 		SpawnMonster();
 		movesSinceSpawn = 0;
-	}*/
+	}
 }
 void Map::SpawnMonster()
 {
-	boost::random::discrete_distribution<> dist(candidateRarities.begin(), candidateRarities.end());
-	std::string monsterToSpawn = spawnCandidates[dist(Game::rng)];
-	Monster* mon = new Monster(monsterToSpawn);
-	spawnedMonsters.push_back(mon);
-	
-	boost::random::uniform_int_distribution<> spawnLocChooser(1, mobMax);
-	std::stringstream ss;
-	int mobLocation = spawnLocChooser(Game::rng);
-	ss << "spawn" << mobLocation;
-	std::cout << ss.str();
-	LuaRef spawnLocTable = getGlobal(map_lua_state, "spawnLocs")[ss.str()];
-	//int posx = spawnLocTable["x"];
-	mon->SetPosition(sf::Vector2f(spawnLocTable["x"].cast<int>(), spawnLocTable["y"].cast<int>()));
+	sf::Vector2f spawnZone(16 * 4.0f, 16 * 4.0f);
+	for (auto layer = GetMapLoader()->GetLayers().begin(); layer != GetMapLoader()->GetLayers().end(); ++layer)
+	{
+		if (layer->name == "MonsterSpawn")
+		{
+			std::vector<std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject>>::_Val_types>::_Myt>> checked;
+			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
+			{
+				bool monsterInSpawnZone = false;
+				sf::Rect<float> spawnZone(sf::Vector2f(object->GetPosition().x - 32, object->GetPosition().y - 32), sf::Vector2f(80, 80));
+				for (int i = 0; i < spawnedMonsters.size(); i++)
+				{
+					sf::Rect<float> mBB = spawnedMonsters[i]->GetBoundingRect();
+					if (mBB.intersects(spawnZone))
+					{
+						monsterInSpawnZone = true;
+					}
+				}
+				if (!monsterInSpawnZone)
+				{
+					double rarity = boost::lexical_cast<int>(object->GetPropertyString("rarity"));
+					spawnCandidates.push_back(object->GetName());
+					CheckSpawnIntersection(object, rarity, checked);
+					candidateRarities.push_back(boost::lexical_cast<int>(object->GetPropertyString("rarity")) / rarity);
+					boost::random::discrete_distribution<> dist(candidateRarities.begin(), candidateRarities.end());
+					std::string monsterToSpawn = spawnCandidates[dist(Game::rng)];
+					Monster* mon = new Monster(monsterToSpawn);
+					sf::Vector2f objectPos(object->GetPosition().x + 8.0f, object->GetPosition().y + 8.0f);
+					mon->SetPosition(objectPos);
+					spawnedMonsters.push_back(mon);
+
+					for (int i = 0; i < spawnCandidates.size(); i++)
+						spawnCandidates.pop_back();
+					for (int i = 0; i < candidateRarities.size(); i++)
+						candidateRarities.pop_back();
+				}
+			}
+		}
+	}
 }
 
 std::vector<Monster*>& Map::GetSpawnedMonsters()

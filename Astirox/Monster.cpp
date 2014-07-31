@@ -132,7 +132,9 @@ bool Monster::checkCollision(Map& map, float x, float y)
 		{
 			//ServiceLocator::GetAudio()->PlaySound("audio/jingles_NES00.ogg");
 			collision = true;
-			Game::startBattle(*player1, *this);
+			Battle* combat = new Battle(*player1, *this);
+			combat->SetTurn(1);
+			Game::startBattle(combat);
 		}
 		GetSprite().move(-x, -y);
 	}

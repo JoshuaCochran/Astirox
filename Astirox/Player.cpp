@@ -217,8 +217,10 @@ bool Player::checkCollision(Map& map, float x, float y)
 			sf::Rect<float> m1BB = map.GetSpawnedMonsters()[i]->GetBoundingRect();
 			if (m1BB.intersects(GetBoundingRect()))
 			{
-				//ServiceLocator::GetAudio()->PlaySound("audio/jingles_NES00.ogg");
-				Game::startBattle(*player1, *map.GetSpawnedMonsters()[i]);
+				ServiceLocator::GetAudio()->PlaySound("audio/jingles_NES00.ogg");
+				Battle* combat = new Battle(*this, *map.GetSpawnedMonsters()[i]);
+				combat->SetTurn(0);
+				Game::startBattle(combat);
 				GetSprite().move(-x, -y);
 				return true;
 			}
@@ -556,17 +558,17 @@ std::vector<Equipment*> Player::GetInventory()
 
 void Player::PickUpItem()
 {
-	for (int i = 0; i < Game::equipmentOnFloor.size(); i++)
+	for (int i = 0; i < Game::currentMap->GetEquipmentOnFloor().size(); i++)
 	{
-		if (Game::equipmentOnFloor.at(i) != NULL)
+		if (Game::currentMap->GetEquipmentOnFloor().at(i) != NULL)
 		{
-			sf::Rect<float> itemBB = Game::equipmentOnFloor.at(i)->GetBoundingRect();
+			sf::Rect<float> itemBB = Game::currentMap->GetEquipmentOnFloor().at(i)->GetBoundingRect();
 
 			if (itemBB.intersects(GetBoundingRect()))
 			{
-				playerInventory.push_back(Game::equipmentOnFloor.at(i));
-				Game::equipmentOnFloor[i] = Game::equipmentOnFloor.back();
-				Game::equipmentOnFloor.pop_back();
+				playerInventory.push_back(Game::currentMap->GetEquipmentOnFloor().at(i));
+				Game::currentMap->GetEquipmentOnFloor()[i] = Game::currentMap->GetEquipmentOnFloor().back();
+				Game::currentMap->GetEquipmentOnFloor().pop_back();
 			}
 		}
 	}
@@ -574,7 +576,7 @@ void Player::PickUpItem()
 
 void Player::DropItem(Equipment& toBeDropped)
 {
-	Game::equipmentOnFloor.push_back(&toBeDropped);
+	Game::currentMap->GetEquipmentOnFloor().push_back(&toBeDropped);
 	for (int i = 0; i < playerInventory.size(); i++)
 	{
 		if (playerInventory[i] == &toBeDropped && &toBeDropped != NULL)

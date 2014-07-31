@@ -171,7 +171,7 @@ bool GuiObjectManager::DrawAttackButton(sf::RenderWindow& renderWindow, sf::Even
 	Get("icon test")->SetPosition(posx + 2, posy);
 	if (Get("spell icon border")->GetBoundingRect().contains(sf::Mouse::getPosition(renderWindow).x, sf::Mouse::getPosition(renderWindow).y))
 	{
-		if (currentEvent.type == sf::Event::MouseButtonReleased)
+		if (currentEvent.type == sf::Event::MouseButtonReleased && battle.GetTurn() == 0)
 		{
 			//battle.GetDamageText().setString(BasicPhysAttack(*battle.GetPlayer(), *battle.GetMonster()));
 			battle.GetDamageText().setString(battle.GetPlayer()->GetSpellInventory()[0](*battle.GetPlayer(), *battle.GetMonster()));
