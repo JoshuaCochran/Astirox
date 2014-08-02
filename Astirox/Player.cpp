@@ -4,6 +4,7 @@
 #include "ServiceLocator.h"
 #include "Monster.h"
 #include "Battle.h"
+#include "Map.hpp"
 
 
 
@@ -182,21 +183,25 @@ bool Player::moveto(Map& map, sf::Event currentEvent)
 		case sf::Keyboard::Left:
 			if (!checkCollision(map, -16, 0)) GetSprite().move(-16, 0);
 			map.AddMove();
+			map.do_fov(map, GetPosition().x, GetPosition().y, 96);
 			return true;
 			break;
 		case sf::Keyboard::Right:
 			if (!checkCollision(map, 16, 0)) GetSprite().move(16, 0);
 			map.AddMove();
+			map.do_fov(map, GetPosition().x, GetPosition().y, 96);
 			return true;
 			break;
 		case sf::Keyboard::Up:
 			if (!checkCollision(map, 0, -16)) GetSprite().move(0, -16);
 			map.AddMove();
+			map.do_fov(map, GetPosition().x, GetPosition().y, 96);
 			return true;
 			break;
 		case sf::Keyboard::Down:
 			if (!checkCollision(map, 0, 16)) GetSprite().move(0, 16);
 			map.AddMove();
+			map.do_fov(map, GetPosition().x, GetPosition().y, 96);
 			return true;
 			break;
 		}
@@ -210,14 +215,13 @@ bool Player::checkCollision(Map& map, float x, float y)
 	//Check to see if moving onto monster
 	for (int i = 0; i < map.GetSpawnedMonsters().size(); i++)
 	{
-		Player* player1 = dynamic_cast<Player*>(Game::GetGameObjectManager().Get("Player"));
 		if (map.GetSpawnedMonsters()[i] != NULL)
 		{
 			GetSprite().move(x, y);
 			sf::Rect<float> m1BB = map.GetSpawnedMonsters()[i]->GetBoundingRect();
 			if (m1BB.intersects(GetBoundingRect()))
 			{
-				ServiceLocator::GetAudio()->PlaySound("audio/jingles_NES00.ogg");
+				//ServiceLocator::GetAudio()->PlaySound("audio/jingles_NES00.ogg");
 				Battle* combat = new Battle(*this, *map.GetSpawnedMonsters()[i]);
 				combat->SetTurn(0);
 				Game::startBattle(combat);
@@ -227,21 +231,13 @@ bool Player::checkCollision(Map& map, float x, float y)
 			GetSprite().move(-x, -y);
 		}
 	}
-
+	if (map.is_opaque(GetPosition().x + x, GetPosition().y + y)) return true;
 
 	//Check to see if collision or entering portal
 	sf::Vector2f point(GetPosition().x + x, GetPosition().y + y);
 	for (auto layer = map.GetMapLoader()->GetLayers().begin(); layer != map.GetMapLoader()->GetLayers().end(); ++layer)
 	{
-		if (layer->name == "Collision")
-		{
-			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
-			{
-				collision = object->Contains(point);
-				if (collision) return collision;
-			}
-		}
-		else if (layer->name == "Portal")
+		if (layer->name == "Portal")
 		{
 			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
 			{
@@ -253,10 +249,6 @@ bool Player::checkCollision(Map& map, float x, float y)
 						{
 							float teleX = (boost::lexical_cast<float>(object->GetPropertyString("Target X")) * 16.0f) + 8.0f;
 							float teleY = (boost::lexical_cast<float>(object->GetPropertyString("Target Y")) * 16.0f) + 8.0f;
-							std::cout << "Teleporting player to:\t\n"
-								<< "Map:\t" << object->GetName() << "\n"
-								<< "PosX:\t" << teleX << "\n"
-								<< "PosY:\t" << teleY;
 							SetPosition(teleX, teleY);
 							collision = true;
 							break;

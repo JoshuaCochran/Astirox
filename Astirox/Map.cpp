@@ -13,7 +13,6 @@ Map::Map()
 Map::Map(std::string filename)
 {
 	//Pure tmx map method
-
 	tmxFile = filename;
 	mapLoader = new tmx::MapLoader("data/maps");
 	mapLoader->Load(tmxFile);
@@ -25,7 +24,7 @@ Map::Map(std::string filename)
 		{
 			std::vector<std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject>>::_Val_types>::_Myt>> checked;
 			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
-			{ 
+			{
 				bool monsterInSpawnZone = false;
 				sf::Rect<float> spawnZone(sf::Vector2f(object->GetPosition().x - 32, object->GetPosition().y - 32), sf::Vector2f(80, 80));
 				for (int i = 0; i < spawnedMonsters.size(); i++)
@@ -38,31 +37,93 @@ Map::Map(std::string filename)
 				}
 				if (!monsterInSpawnZone)
 				{
-					++mobMax;
-					double rarity = boost::lexical_cast<int>(object->GetPropertyString("rarity"));
-					CheckSpawnIntersection(object, rarity, checked);
-					spawnCandidates.push_back(object->GetName());
-					candidateRarities.push_back(boost::lexical_cast<double>(object->GetPropertyString("rarity")));
-					for (int i = 0; i < candidateRarities.size(); i++)
+					if (object->GetPropertyString("rarity") != "" && object->GetName() != "")
 					{
-						candidateRarities[i] = candidateRarities[i] / rarity;
-					}
-					boost::random::discrete_distribution<> dist(candidateRarities.begin(), candidateRarities.end());
-					std::string monsterToSpawn = spawnCandidates[dist(Game::rng)];
-					Monster* mon = new Monster(monsterToSpawn);
-					sf::Vector2f objectPos(object->GetPosition().x + 8.0f, object->GetPosition().y + 8.0f);
-					mon->SetPosition(objectPos);
-					spawnedMonsters.push_back(mon);
+						++mobMax;
+						double rarity = boost::lexical_cast<int>(object->GetPropertyString("rarity"));
+						CheckSpawnIntersection(object, rarity, checked);
+						spawnCandidates.push_back(object->GetName());
+						candidateRarities.push_back(boost::lexical_cast<double>(object->GetPropertyString("rarity")));
+						for (int i = 0; i < candidateRarities.size(); i++)
+						{
+							candidateRarities[i] = candidateRarities[i] / rarity;
+						}
+						boost::random::discrete_distribution<> dist(candidateRarities.begin(), candidateRarities.end());
+						std::string monsterToSpawn = spawnCandidates[dist(Game::rng)];
+						Monster* mon = new Monster(monsterToSpawn);
+						sf::Vector2f objectPos(object->GetPosition().x + 8.0f, object->GetPosition().y + 8.0f);
+						mon->SetPosition(objectPos);
+						spawnedMonsters.push_back(mon);
 
-					for (int i = 0; i < spawnCandidates.size(); i++)
-						spawnCandidates.pop_back();
-					for (int i = 0; i < candidateRarities.size(); i++)
-						candidateRarities.pop_back();
+						for (int i = 0; i < spawnCandidates.size(); i++)
+							spawnCandidates.pop_back();
+						for (int i = 0; i < candidateRarities.size(); i++)
+							candidateRarities.pop_back();
+					}
 				}
 			}
 		}
 	}
 
+	FOG_OF_WAR_HEIGHT = mapLoader->GetMapSize().y / 16;
+	FOG_OF_WAR_WIDTH = mapLoader->GetMapSize().x / 16;
+
+
+	fogTexture.loadFromFile("data/maps/fogTexture.png");
+	for (int i = 0; i < (mapLoader->GetMapSize().x / 16 * mapLoader->GetMapSize().y / 16); i++)
+	{
+		s_FogOfWar temp;
+		temp.sprite.setTexture(fogTexture);
+		temp.IsVisible = false;
+		temp.HasSeen = false;
+		fogOfWar.push_back(temp);
+	}
+	int count = 0;
+	for (int j = 0; j < (mapLoader->GetMapSize().x / 16); j++)
+	{
+		for (int k = 0; k < (mapLoader->GetMapSize().y / 16); k++)
+		{
+			fogOfWar[count].sprite.setPosition(j * 16, k * 16);
+			count++;
+		}
+	}
+	for (int j = 0; j < 48; j++)
+	{
+		for (int i = 0; i < 64; i++)
+		{
+			opaque_map[i][j] = 0;
+		}
+	}
+	for (auto layer = GetMapLoader()->GetLayers().begin(); layer != GetMapLoader()->GetLayers().end(); ++layer)
+	{
+		if (layer->name == "Collision")
+		{
+			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
+			{
+				for (int i = 0; i < 64; i++)
+				{
+					for (int j = 0; j < 48; j++)
+					{
+						if (object->Contains(sf::Vector2f(i * 16, j * 16)))
+						{
+							opaque_map[i][j] = 1;
+						}
+					}
+				}
+			}
+		}
+	}
+	for (int j = 0; j < 48; j++)
+	{
+		for (int i = 0; i < 64; i++)
+		{
+			std::cout << opaque_map[i][j];
+		}
+		std::cout << "\n";
+	}
+
+
+	count = 0;
 	//Lua map method
 
 	/*map_lua_state = luaL_newstate();
@@ -144,27 +205,30 @@ bool Map::CheckSpawnIntersection(std::_Vector_iterator<std::_Vector_val<std::_Ve
 		{
 			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
 			{
-				if (object->Contains(mo->GetPosition()) && mo != object)
+				if (object->GetName() != "" && object->GetPropertyString("rarity") != "")
 				{
-					if (alreadyChecked.size() == 0) newIntersection = true;
-					else
+					if (object->Contains(mo->GetPosition()) && mo != object)
 					{
-						for (int i = 0; i < alreadyChecked.size(); i++)
+						if (alreadyChecked.size() == 0) newIntersection = true;
+						else
 						{
-							if (object == alreadyChecked[i])
+							for (int i = 0; i < alreadyChecked.size(); i++)
 							{
-								newIntersection = true;
+								if (object == alreadyChecked[i])
+								{
+									newIntersection = true;
+								}
 							}
 						}
 					}
-				}
-				if (newIntersection)
-				{
-					spawnCandidates.push_back(object->GetName());
-					candidateRarities.push_back(boost::lexical_cast<int>(object->GetPropertyString("rarity")));
-					alreadyChecked.push_back(object);
-					totalRarity += boost::lexical_cast<int>(object->GetPropertyString("rarity"));
-					if (alreadyChecked.size() < layer->objects.size()) CheckSpawnIntersection(mo, totalRarity, alreadyChecked);
+					if (newIntersection)
+					{
+						spawnCandidates.push_back(object->GetName());
+						candidateRarities.push_back(boost::lexical_cast<int>(object->GetPropertyString("rarity")));
+						alreadyChecked.push_back(object);
+						totalRarity += boost::lexical_cast<int>(object->GetPropertyString("rarity"));
+						if (alreadyChecked.size() < layer->objects.size()) CheckSpawnIntersection(mo, totalRarity, alreadyChecked);
+					}
 				}
 			}
 		}
@@ -175,13 +239,39 @@ bool Map::CheckSpawnIntersection(std::_Vector_iterator<std::_Vector_val<std::_Ve
 void Map::DrawAll(sf::RenderWindow& renderWindow)
 {
 	renderWindow.draw(*mapLoader);
-	for (int i = 0; i < equipmentOnFloor.size(); i++)
+	sf::Rect<float> viewBox(sf::Vector2f(Game::view.getCenter().x - 128, Game::view.getCenter().y - 96), sf::Vector2f(256, 192));
+	for (int i = 0; i < fogOfWar.size(); i++)
 	{
-		equipmentOnFloor[i]->Draw(renderWindow);
-	}
-	for (int i = 0; i < spawnedMonsters.size(); i++)
-	{
-		spawnedMonsters[i]->Draw(renderWindow);
+		if (viewBox.intersects(fogOfWar[i].sprite.getGlobalBounds()))
+		{
+			if (!fogOfWar[i].IsVisible)
+			{
+				if (fogOfWar[i].HasSeen)
+					fogOfWar[i].sprite.setColor(sf::Color(255, 255, 255, 255 / 2));
+				else
+					fogOfWar[i].sprite.setColor(sf::Color(255, 255, 255, 255));
+
+				renderWindow.draw(fogOfWar[i].sprite);
+			}
+			else
+			{
+				for (int j = 0; j < spawnedMonsters.size(); j++)
+				{
+
+					if (fogOfWar[i].sprite.getGlobalBounds().intersects(spawnedMonsters[j]->GetBoundingRect()))
+					{
+						spawnedMonsters[j]->Draw(renderWindow);
+					}
+				}
+				for (int j = 0; j < equipmentOnFloor.size(); j++)
+				{
+					if (fogOfWar[i].sprite.getGlobalBounds().intersects(equipmentOnFloor[j]->GetBoundingRect()))
+					{
+						equipmentOnFloor[j]->Draw(renderWindow);
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -214,6 +304,10 @@ void Map::SpawnMonster()
 			std::vector<std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject>>::_Val_types>::_Myt>> checked;
 			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
 			{
+				object->SetVisible(true);
+				if (spawnedMonsters.size() > mobMax)
+					break;
+
 				bool monsterInSpawnZone = false;
 				sf::Rect<float> spawnZone(sf::Vector2f(object->GetPosition().x - 32, object->GetPosition().y - 32), sf::Vector2f(80, 80));
 				for (int i = 0; i < spawnedMonsters.size(); i++)
@@ -313,4 +407,109 @@ void Map::UsePortal(Player& player, TeleportInfo portal)
 std::vector<Equipment*>& Map::GetEquipmentOnFloor()
 {
 	return equipmentOnFloor;
+}
+
+void Map::set_visible(unsigned int x, unsigned int y, bool visible)
+{
+	int xPos = x/16 * FOG_OF_WAR_HEIGHT;
+	int yPos = (y/16) % FOG_OF_WAR_HEIGHT;
+	fogOfWar[(xPos + yPos)].IsVisible = visible;
+}
+bool Map::is_opaque(unsigned int x, unsigned int y)
+{
+	if (opaque_map[x / 16][y / 16] == 0)
+		return false;
+	else return true;
+}
+
+int Map::get_fog_width() const
+{
+	return FOG_OF_WAR_WIDTH;
+}
+
+int Map::get_fog_height() const
+{
+	return FOG_OF_WAR_HEIGHT;
+}
+
+std::vector<s_FogOfWar>& Map::GetFogOfWar()
+{
+	return fogOfWar;
+}
+
+void Map::cast_light(Map& map, uint x, uint y, uint radius, uint row,
+	float start_slope, float end_slope, uint xx, uint xy, uint yx,
+	uint yy) {
+	if (start_slope < end_slope) {
+		return;
+	}
+	float next_start_slope = start_slope;
+	for (uint i = row; i <= radius; i++) {
+		bool blocked = false;
+		for (int dx = -(int)(i), dy = -(int)(i); dx <= 0; dx++) {
+			dx = (uint)dx;
+			dy = (uint)dy;
+			float l_slope = (dx - 0.5) / (dy + 0.5);
+			float r_slope = (dx + 0.5) / (dy - 0.5);
+			if (start_slope < r_slope) {
+				continue;
+			}
+			else if (end_slope > l_slope) {
+				break;
+			}
+
+			int sax = dx * xx + dy * xy;
+			int say = dx * yx + dy * yy;
+			if ((sax < 0 && (uint)std::abs(sax) > x) ||
+				(say < 0 && (uint)std::abs(say) > y)) {
+				continue;
+			}
+			uint ax = x + sax;
+			uint ay = y + say;
+			if (ax >= GetMapLoader()->GetMapSize().x || ay >= GetMapLoader()->GetMapSize().y
+				|| ((ax % 16 != 0) && (ay % 16 != 0)))  {
+				continue;
+			}
+
+			uint radius2 = radius * radius;
+			if ((uint)(dx * dx + dy * dy) < radius2) {
+				set_visible(ax, ay, true);
+			}
+
+			if (blocked) {
+				if (is_opaque(ax, ay)) {
+					next_start_slope = r_slope;
+					continue;
+				}
+				else {
+					blocked = false;
+					start_slope = next_start_slope;
+				}
+			}
+			else if (is_opaque(ax, ay)) {
+				blocked = true;
+				next_start_slope = r_slope;
+				cast_light(map, x, y, radius, i + 1, start_slope, l_slope, xx,
+					xy, yx, yy);
+			}
+		}
+		if (blocked) {
+			break;
+		}
+	}
+}
+
+void Map::do_fov(Map& map, uint x, uint y, uint radius) {
+	for (int i = 0; i < fogOfWar.size(); i++)
+	{
+		if (fogOfWar[i].IsVisible)
+		{
+			fogOfWar[i].HasSeen = true;
+			fogOfWar[i].IsVisible = false;
+		}
+	}
+	for (uint i = 0; i < 8; i++) {
+		cast_light(*this, x, y, radius, 1, 1.0, 0.0, multipliers[0][i],
+			multipliers[1][i], multipliers[2][i], multipliers[3][i]);
+	}
 }

@@ -12,10 +12,24 @@ extern "C" {
 }
 #include <LuaBridge.h>
 
+typedef unsigned int uint;
+static int multipliers[4][8] = {
+		{ 1, 0, 0, -1, -1, 0, 0, 1 },
+		{ 0, 1, -1, 0, 0, -1, 1, 0 },
+		{ 0, 1, 1, 0, 0, -1, -1, 0 },
+		{ 1, 0, 0, 1, -1, 0, 0, -1 }
+};
+
 struct TeleportInfo{
 	sf::Vector2f exitPos;
 	sf::Vector2f targetPos;
 	std::string targetMap;
+};
+struct s_FogOfWar
+{
+	sf::Sprite sprite;
+	bool IsVisible;
+	bool HasSeen;
 };
 
 class Player;
@@ -42,6 +56,17 @@ public:
 	int GetMaxMobs();
 	std::string GetTMXFile();
 	void CheckSpawn();
+
+	int get_fog_width() const;
+	int get_fog_height() const;
+
+	void set_visible(unsigned int x, unsigned int y, bool visible);
+	bool is_opaque(unsigned int x, unsigned int y);
+	std::vector<s_FogOfWar>& GetFogOfWar();
+	void do_fov(Map& map, uint x, uint y, uint radius);
+	void cast_light(Map& map, uint x, uint y, uint radius, uint row,
+		float start_slope, float end_slope, uint xx, uint xy, uint yx,
+		uint yy);
 	
 private:
 	std::string tmxFile; // e.g. map.tmx
@@ -59,6 +84,13 @@ private:
 	std::vector<double> candidateRarities;
 	std::vector<Monster*> spawnedMonsters;
 	std::vector<Equipment*> equipmentOnFloor;
+	
+	sf::Texture fogTexture;
+	std::vector<s_FogOfWar> fogOfWar;
+	int opaque_map[64][48];
+
+	int FOG_OF_WAR_WIDTH;
+	int FOG_OF_WAR_HEIGHT;
 
 	void AddSpawnCandidate(std::string filename, double rarity);
 	void SpawnMonster();

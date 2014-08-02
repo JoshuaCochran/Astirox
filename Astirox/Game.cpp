@@ -41,6 +41,7 @@ void Game::Start(void)
 	
 	currentMap = new Map("mine.tmx");
 
+
 	ServiceLocator::RegisterServiceLocator(&soundProvider);
 
 
@@ -48,7 +49,7 @@ void Game::Start(void)
 
 	Player *player = new Player();
 	player->SetPosition(24, 24);
-
+	currentMap->do_fov(*currentMap, player->GetPosition().x, player->GetPosition().y, 96);
 
 	_guiObjectManager.Init();
 
@@ -124,19 +125,6 @@ void Game::GameLoop()
 			break;
 
 		case Game::Playing:
-			//view.reset(sf::FloatRect(24, 24, 256, 192));
-			/*if (view.getCenter().x < player1->GetPosition().x)
-				view.setCenter(view.getCenter().x + offset, view.getCenter().y);
-			else if (view.getCenter().x > player1->GetPosition().x)
-				view.setCenter(view.getCenter().x - offset, view.getCenter().y);
-			if (view.getCenter().y < player1->GetPosition().y)
-				view.setCenter(view.getCenter().x, view.getCenter().y + offset);
-			else if (view.getCenter().y > player1->GetPosition().y)
-				view.setCenter(view.getCenter().x, view.getCenter().y - offset);
-			//view.setCenter(player1->GetPosition().x, player1->GetPosition().y);
-			//view.setViewport(sf::FloatRect(0.f, 0.f, 0.5f, 1.f));
-			_mainWindow.setView(view);//*/
-
 			_mainWindow.clear(sf::Color(sf::Color(0, 0, 0)));
 			if (currentEvent.type == sf::Event::KeyPressed && currentEvent.key.code == sf::Keyboard::Z)
 				player1->PickUpItem();
