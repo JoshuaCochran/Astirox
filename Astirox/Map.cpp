@@ -91,7 +91,7 @@ Map::Map(std::string filename)
 	{
 		for (int i = 0; i < 64; i++)
 		{
-			opaque_map[i][j] = 0;
+			opaque_map[i][j] = ".";
 		}
 	}
 	for (auto layer = GetMapLoader()->GetLayers().begin(); layer != GetMapLoader()->GetLayers().end(); ++layer)
@@ -106,7 +106,55 @@ Map::Map(std::string filename)
 					{
 						if (object->Contains(sf::Vector2f(i * 16, j * 16)))
 						{
-							opaque_map[i][j] = 1;
+							opaque_map[i][j] = "#";
+						}
+					}
+				}
+			}
+		}
+		else if (layer->name == "Secret")
+		{
+			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
+			{
+				for (int i = 0; i < 64; i++)
+				{
+					for (int j = 0; j < 48; j++)
+					{
+						if (object->Contains(sf::Vector2f(i * 16, j * 16)))
+						{
+							opaque_map[i][j] = "S";
+						}
+					}
+				}
+			}
+		}
+		else if (layer->name == "Portal")
+		{
+			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
+			{
+				for (int i = 0; i < 64; i++)
+				{
+					for (int j = 0; j < 48; j++)
+					{
+						if (object->Contains(sf::Vector2f(i * 16, j * 16)))
+						{
+							opaque_map[i][j] = "P";
+						}
+					}
+				}
+			}
+		}
+		else if (layer->name == "Unpassable")
+		{
+			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
+			{
+				for (int i = 0; i < 64; i++)
+				{
+					for (int j = 0; j < 48; j++)
+					{
+						if (object->Contains(sf::Vector2f(i * 16, j * 16)))
+						{
+							opaque_map[i][j] = ",";
 						}
 					}
 				}
@@ -362,7 +410,8 @@ int Map::GetMovesSinceSpawn()
 
 void Map::AddMove()
 {
-	movesSinceSpawn += 1;
+	if (spawnedMonsters.size() < mobMax)
+		movesSinceSpawn += 1;
 }
 
 std::vector<TeleportInfo>& Map::GetPortals()
@@ -397,11 +446,72 @@ void Map::AddTargetPosY(int posy)
 	portals[portals.size() - 1].targetPos.y = posy;
 }
 
-void Map::UsePortal(Player& player, TeleportInfo portal)
+bool Map::UsePortal(Player& player, sf::Vector2f point)
 {
-	delete Game::currentMap;
-	Game::currentMap = new Map(portal.targetMap);
-	player.SetPosition(portal.targetPos);
+	for (auto layer = GetMapLoader()->GetLayers().begin(); layer != GetMapLoader()->GetLayers().end(); ++layer)
+	{
+		if (layer->name == "Portal")
+		{
+			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
+			{
+				if (object->GetName() != "" && object->GetPropertyString("Target X") != "" && object->GetPropertyString("Target Y") != "")
+				{
+					if (object->Contains(point))
+					{
+						if (object->GetName() == GetTMXFile())
+						{
+							float teleX = (boost::lexical_cast<float>(object->GetPropertyString("Target X")) * 16.0f) + 8.0f;
+							float teleY = (boost::lexical_cast<float>(object->GetPropertyString("Target Y")) * 16.0f) + 8.0f;
+							
+							set_map(player.GetPosition(), ".");
+							player.SetPosition(teleX, teleY);
+							set_map(sf::Vector2f(teleX, teleY), "@");
+
+							return true;
+						}
+						else
+						{
+							bool recentlyVisited = false;
+							for (int i = 0; i < Game::recentlyVisitedMaps.size(); i++)
+							{
+								if (Game::recentlyVisitedMaps[i]->GetTMXFile() == object->GetName())
+								{
+									recentlyVisited = true;
+									Game::currentMap = Game::recentlyVisitedMaps[i];
+									float teleX = (boost::lexical_cast<float>(object->GetPropertyString("Target X")) * 16.0f) + 8.0f;
+									float teleY = (boost::lexical_cast<float>(object->GetPropertyString("Target Y")) * 16.0f) + 8.0f;
+									
+									set_map(player.GetPosition(), ".");
+									player.SetPosition(teleX, teleY);
+									Game::currentMap->set_map(player.GetPosition(), "@");
+
+									return true;
+								}
+							}
+							if (!recentlyVisited)
+							{
+								Game::recentlyVisitedMaps.push_back(Game::currentMap);
+								if (Game::recentlyVisitedMaps.size() > 4)
+								{
+									delete Game::recentlyVisitedMaps[0];
+									Game::recentlyVisitedMaps.erase(Game::recentlyVisitedMaps.begin());
+								}
+								Game::currentMap = new Map(object->GetName());
+								float teleX = (boost::lexical_cast<float>(object->GetPropertyString("Target X")) * 16.0f) + 8.0f;
+								float teleY = (boost::lexical_cast<float>(object->GetPropertyString("Target Y")) * 16.0f) + 8.0f;
+								
+								set_map(player.GetPosition(), ".");
+								player.SetPosition(teleX, teleY);
+								Game::currentMap->set_map(player.GetPosition(), "@");
+
+								return true;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 std::vector<Equipment*>& Map::GetEquipmentOnFloor()
@@ -415,11 +525,58 @@ void Map::set_visible(unsigned int x, unsigned int y, bool visible)
 	int yPos = (y/16) % FOG_OF_WAR_HEIGHT;
 	fogOfWar[(xPos + yPos)].IsVisible = visible;
 }
+
+void Map::set_map(sf::Vector2f point, std::string str)
+{
+	opaque_map[(int)point.x / 16][(int)point.y / 16] = str;
+}
+
+void Map::draw_map()
+{
+	for (int j = 0; j < 48; j++)
+	{
+		for (int i = 0; i < 64; i++)
+		{
+			std::cout << opaque_map[i][j];
+		}
+		std::cout << "\n";
+	}
+}
+
 bool Map::is_opaque(unsigned int x, unsigned int y)
 {
-	if (opaque_map[x / 16][y / 16] == 0)
-		return false;
-	else return true;
+	if (opaque_map[x / 16][y / 16] == "#" || opaque_map[x / 16][y / 16] == "S")
+		return true;
+	else return false;
+}
+
+bool Map::is_wall(sf::Vector2f point)
+{
+	if (opaque_map[(int)point.x / 16][(int)point.y / 16] == "#" 
+		|| opaque_map[(int)point.x / 16][(int)point.y / 16] == ",")
+		return true;
+	else return false;
+}
+
+bool Map::is_portal(sf::Vector2f point)
+{
+	if (opaque_map[(int)point.x / 16][(int)point.y / 16] == "P")
+		return true;
+	else return false;
+}
+
+bool Map::is_monster(sf::Vector2f point)
+{
+	if (opaque_map[(int)point.x / 16][(int)point.y / 16] == "m")
+		return true;
+	else return false;
+}
+
+bool Map::is_player(sf::Vector2f point)
+{
+	if (opaque_map[(int)point.x / 16][(int)point.y / 16] == "@")
+		return true;
+	else return false;
 }
 
 int Map::get_fog_width() const
@@ -437,7 +594,7 @@ std::vector<s_FogOfWar>& Map::GetFogOfWar()
 	return fogOfWar;
 }
 
-void Map::cast_light(Map& map, uint x, uint y, uint radius, uint row,
+void Map::cast_light(uint x, uint y, uint radius, uint row,
 	float start_slope, float end_slope, uint xx, uint xy, uint yx,
 	uint yy) {
 	if (start_slope < end_slope) {
@@ -489,7 +646,7 @@ void Map::cast_light(Map& map, uint x, uint y, uint radius, uint row,
 			else if (is_opaque(ax, ay)) {
 				blocked = true;
 				next_start_slope = r_slope;
-				cast_light(map, x, y, radius, i + 1, start_slope, l_slope, xx,
+				cast_light(x, y, radius, i + 1, start_slope, l_slope, xx,
 					xy, yx, yy);
 			}
 		}
@@ -499,7 +656,7 @@ void Map::cast_light(Map& map, uint x, uint y, uint radius, uint row,
 	}
 }
 
-void Map::do_fov(Map& map, uint x, uint y, uint radius) {
+void Map::do_fov(uint x, uint y, uint radius) {
 	for (int i = 0; i < fogOfWar.size(); i++)
 	{
 		if (fogOfWar[i].IsVisible)
@@ -509,7 +666,7 @@ void Map::do_fov(Map& map, uint x, uint y, uint radius) {
 		}
 	}
 	for (uint i = 0; i < 8; i++) {
-		cast_light(*this, x, y, radius, 1, 1.0, 0.0, multipliers[0][i],
+		cast_light(x, y, radius, 1, 1.0, 0.0, multipliers[0][i],
 			multipliers[1][i], multipliers[2][i], multipliers[3][i]);
 	}
 }

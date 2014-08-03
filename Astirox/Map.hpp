@@ -51,7 +51,7 @@ public:
 	void AddMove();
 
 	std::vector<TeleportInfo>& GetPortals();
-	void UsePortal(Player& player, TeleportInfo portal);
+	bool UsePortal(Player& player, sf::Vector2f point);
 
 	int GetMaxMobs();
 	std::string GetTMXFile();
@@ -61,13 +61,17 @@ public:
 	int get_fog_height() const;
 
 	void set_visible(unsigned int x, unsigned int y, bool visible);
-	bool is_opaque(unsigned int x, unsigned int y);
+	bool is_wall(sf::Vector2f point);
+	bool is_portal(sf::Vector2f point);
+	bool is_monster(sf::Vector2f point);
+	bool is_player(sf::Vector2f point);
+
+	void set_map(sf::Vector2f point, std::string str);
+	void draw_map();
+
 	std::vector<s_FogOfWar>& GetFogOfWar();
-	void do_fov(Map& map, uint x, uint y, uint radius);
-	void cast_light(Map& map, uint x, uint y, uint radius, uint row,
-		float start_slope, float end_slope, uint xx, uint xy, uint yx,
-		uint yy);
-	
+	void do_fov(uint x, uint y, uint radius);
+
 private:
 	std::string tmxFile; // e.g. map.tmx
 	tmx::MapLoader* mapLoader;
@@ -87,10 +91,14 @@ private:
 	
 	sf::Texture fogTexture;
 	std::vector<s_FogOfWar> fogOfWar;
-	int opaque_map[64][48];
-
+	std::string opaque_map[64][48];
 	int FOG_OF_WAR_WIDTH;
 	int FOG_OF_WAR_HEIGHT;
+
+	bool is_opaque(unsigned int x, unsigned int y);
+	void cast_light(uint x, uint y, uint radius, uint row,
+		float start_slope, float end_slope, uint xx, uint xy, uint yx,
+		uint yy);
 
 	void AddSpawnCandidate(std::string filename, double rarity);
 	void SpawnMonster();

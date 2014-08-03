@@ -98,6 +98,7 @@ public:
 private:
 	float _velocity; //-- left ++ right
 	float _maxVelocity;
+	bool move(int x, int y);
 
 	lua_State* player_lua_state;
 	void CalculateStats();

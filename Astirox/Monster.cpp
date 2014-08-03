@@ -108,53 +108,35 @@ void Monster::Draw(sf::RenderWindow& rw)
 bool Monster::checkCollision(Map& map, float x, float y)
 {
 	if (this == nullptr) return true;
-	bool collision = false;
+
 	sf::Vector2f point(GetPosition().x + x, GetPosition().y + y);
-	for (auto layer = map.GetMapLoader()->GetLayers().begin(); layer != map.GetMapLoader()->GetLayers().end(); ++layer)
+	if (map.is_wall(point)) return true;
+	else if (map.is_player(point))
 	{
-		if (layer->name == "Collision")
+		Player* player1 = dynamic_cast<Player*>(Game::GetGameObjectManager().Get("Player"));
+		if (player1 != NULL)
 		{
-			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
+			sf::Rect<float> mBB = GetBoundingRect();
+			sf::Rect<float> p1BB = player1->GetBoundingRect();
+			mBB.left += x;
+			mBB.top += y;
+			if (p1BB.intersects(mBB))
 			{
-				collision = object->Contains(point);
-				if (collision) return collision;
+				//ServiceLocator::GetAudio()->PlaySound("audio/jingles_NES00.ogg");
+				Battle* combat = new Battle(*player1, *this);
+				combat->SetTurn(1);
+				Game::startBattle(combat);
+				return true;
 			}
 		}
 	}
-
-	Player* player1 = dynamic_cast<Player*>(Game::GetGameObjectManager().Get("Player"));
-	if (player1 != NULL)
+	else if (map.is_monster(point)) return true;
+	else
 	{
-		GetSprite().move(x, y);
-		sf::Rect<float> p1BB = player1->GetBoundingRect();
-
-		if (p1BB.intersects(GetBoundingRect()))
-		{
-			//ServiceLocator::GetAudio()->PlaySound("audio/jingles_NES00.ogg");
-			collision = true;
-			Battle* combat = new Battle(*player1, *this);
-			combat->SetTurn(1);
-			Game::startBattle(combat);
-		}
-		GetSprite().move(-x, -y);
+		map.set_map(GetPosition(), ".");
+		map.set_map(sf::Vector2f(GetPosition().x + x, GetPosition().y + y), "m");
+		return false;
 	}
-
-	std::stringstream ss;
-	for (int i = 1; i < map.GetSpawnedMonsters().size(); i++)
-	{
-		if (map.GetSpawnedMonsters()[i] != NULL && map.GetSpawnedMonsters()[i] != this)
-		{
-			GetSprite().move(x, y);
-			sf::Rect<float> m1BB = map.GetSpawnedMonsters()[i]->GetBoundingRect();
-
-			if (m1BB.intersects(GetBoundingRect()))
-			{
-				collision = true;
-			}
-			GetSprite().move(-x, -y);
-		}
-	}
-	return collision;
 }
 
 void Monster::Update(Map& map)

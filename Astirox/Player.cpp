@@ -171,6 +171,20 @@ void Player::Update(float elapsedTime)
 {
 }
 
+bool Player::move(int x, int y)
+{
+	if (!checkCollision(*Game::currentMap, x, y))
+	{
+		Game::currentMap->set_map(GetPosition(), ".");
+		GetSprite().move(x, y);
+		Game::currentMap->set_map(GetPosition(), "@");
+		Game::currentMap->AddMove();
+		Game::currentMap->do_fov(GetPosition().x, GetPosition().y, 96);
+		Game::currentMap->draw_map();
+		return true;
+	}
+	else return false;
+}
 
 bool Player::moveto(Map& map, sf::Event currentEvent)
 {
@@ -181,28 +195,16 @@ bool Player::moveto(Map& map, sf::Event currentEvent)
 		switch (currentEvent.key.code)
 		{
 		case sf::Keyboard::Left:
-			if (!checkCollision(map, -16, 0)) GetSprite().move(-16, 0);
-			map.AddMove();
-			map.do_fov(map, GetPosition().x, GetPosition().y, 96);
-			return true;
+			return move(-16, 0);
 			break;
 		case sf::Keyboard::Right:
-			if (!checkCollision(map, 16, 0)) GetSprite().move(16, 0);
-			map.AddMove();
-			map.do_fov(map, GetPosition().x, GetPosition().y, 96);
-			return true;
+			return move(16, 0);
 			break;
 		case sf::Keyboard::Up:
-			if (!checkCollision(map, 0, -16)) GetSprite().move(0, -16);
-			map.AddMove();
-			map.do_fov(map, GetPosition().x, GetPosition().y, 96);
-			return true;
+			return move(0, -16);
 			break;
-		case sf::Keyboard::Down:
-			if (!checkCollision(map, 0, 16)) GetSprite().move(0, 16);
-			map.AddMove();
-			map.do_fov(map, GetPosition().x, GetPosition().y, 96);
-			return true;
+		case sf::Keyboard::Down:			
+			return move(0, 16);
 			break;
 		}
 	}
@@ -211,86 +213,37 @@ bool Player::moveto(Map& map, sf::Event currentEvent)
 
 bool Player::checkCollision(Map& map, float x, float y)
 {
-	bool collision = false;
-	//Check to see if moving onto monster
-	for (int i = 0; i < map.GetSpawnedMonsters().size(); i++)
-	{
-		if (map.GetSpawnedMonsters()[i] != NULL)
-		{
-			GetSprite().move(x, y);
-			sf::Rect<float> m1BB = map.GetSpawnedMonsters()[i]->GetBoundingRect();
-			if (m1BB.intersects(GetBoundingRect()))
-			{
-				//ServiceLocator::GetAudio()->PlaySound("audio/jingles_NES00.ogg");
-				Battle* combat = new Battle(*this, *map.GetSpawnedMonsters()[i]);
-				combat->SetTurn(0);
-				Game::startBattle(combat);
-				GetSprite().move(-x, -y);
-				return true;
-			}
-			GetSprite().move(-x, -y);
-		}
-	}
-	if (map.is_opaque(GetPosition().x + x, GetPosition().y + y)) return true;
-
-	//Check to see if collision or entering portal
 	sf::Vector2f point(GetPosition().x + x, GetPosition().y + y);
-	for (auto layer = map.GetMapLoader()->GetLayers().begin(); layer != map.GetMapLoader()->GetLayers().end(); ++layer)
+
+	if (map.is_wall(point)) return true;
+	else if (map.is_monster(point))
 	{
-		if (layer->name == "Portal")
+		for (int i = 0; i < map.GetSpawnedMonsters().size(); i++)
 		{
-			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
+			if (map.GetSpawnedMonsters()[i] != NULL)
 			{
-				if (object->GetName() != "" && object->GetPropertyString("Target X") != "" && object->GetPropertyString("Target Y") != "")
+				sf::Rect<float> mBB = map.GetSpawnedMonsters()[i]->GetBoundingRect();
+				sf::Rect<float> pBB = GetBoundingRect();
+				pBB.left += x;
+				pBB.top += y;
+				if (mBB.intersects(pBB))
 				{
-					if (object->Contains(point))
-					{
-						if (object->GetName() == map.GetTMXFile())
-						{
-							float teleX = (boost::lexical_cast<float>(object->GetPropertyString("Target X")) * 16.0f) + 8.0f;
-							float teleY = (boost::lexical_cast<float>(object->GetPropertyString("Target Y")) * 16.0f) + 8.0f;
-							SetPosition(teleX, teleY);
-							collision = true;
-							break;
-						}
-						else
-						{
-							bool recentlyVisited = false;
-							for (int i = 0; i < Game::recentlyVisitedMaps.size(); i++)
-							{
-								if (Game::recentlyVisitedMaps[i]->GetTMXFile() == object->GetName())
-								{
-									recentlyVisited = true;
-									Game::currentMap = Game::recentlyVisitedMaps[i];
-									float teleX = (boost::lexical_cast<float>(object->GetPropertyString("Target X")) * 16.0f) + 8.0f;
-									float teleY = (boost::lexical_cast<float>(object->GetPropertyString("Target Y")) * 16.0f) + 8.0f;
-									SetPosition(teleX, teleY);
-									collision = true;
-									break;
-								}
-							}
-							if (!recentlyVisited)
-							{
-								Game::recentlyVisitedMaps.push_back(Game::currentMap);
-								if (Game::recentlyVisitedMaps.size() > 4)
-								{
-									delete Game::recentlyVisitedMaps[0];
-									Game::recentlyVisitedMaps.erase(Game::recentlyVisitedMaps.begin());
-								}
-								Game::currentMap = new Map(object->GetName());
-								float teleX = (boost::lexical_cast<float>(object->GetPropertyString("Target X")) * 16.0f) + 8.0f;
-								float teleY = (boost::lexical_cast<float>(object->GetPropertyString("Target Y")) * 16.0f) + 8.0f;
-								SetPosition(teleX, teleY);
-								collision = true;
-								break;
-							}
-						}
-					}
+					//ServiceLocator::GetAudio()->PlaySound("audio/jingles_NES00.ogg");
+					Battle* combat = new Battle(*this, *map.GetSpawnedMonsters()[i]);
+					combat->SetTurn(0);
+					Game::startBattle(combat);
+					GetSprite().move(-x, -y);
+					return true;
 				}
 			}
 		}
 	}
-	return collision;
+	else if (map.is_portal(point))
+	{ 
+		map.UsePortal(*this, point);
+		return true;
+	}
+	else return false;
 }
 
 std::string Player::GetName() const
