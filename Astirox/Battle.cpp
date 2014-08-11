@@ -4,36 +4,91 @@
 #include "Monster.h"
 #include "Equipment.hpp"
 
-Battle::Battle(Player& player1, Monster& monster1)
+Battle::Battle(std::vector<Player*>& playerParty, std::vector<Monster*>& monsterParty, bool ambush)
 {
-	m_player = &player1;
-	m_monster = &monster1;
+	//m_monster = &monster1;
+	if (ambush)
+		SetActiveEntity(*monsterParty[0], false);
+	else
+		SetActiveEntity(*playerParty[0], true);
+	monsterPos = monsterParty[0]->GetPosition();
+	m_monsterParty = monsterParty;
+	for (int i = 0; i < monsterParty.size(); i++)
+	{
+		monsterParty[i]->SetPosition(Game::SCREEN_WIDTH / 2 - 200 + (48 * i),
+			Game::SCREEN_HEIGHT / 2 + 96 - (48 * i));
+		monsterParty[i]->SetScale(3, 3);
+	}
+	m_playerParty = playerParty;
+	playerPos = Game::playerParty[0]->GetPosition();
+	for (int i = 0; i < Game::playerParty.size(); i++)
+	{
+		m_playerParty[i]->SetPosition(Game::SCREEN_WIDTH / 2 + 100 + (48 * i), 
+			Game::SCREEN_HEIGHT / 2 + 96 - (48 * i));
+		m_playerParty[i]->SetScale(3, 3);
+	}
+	for (int i = 0; i < Game::playerParty.size(); i++)
+	{
+		Entity temp;
+		temp.entity = Game::playerParty[i];
+		temp.friendly = true;
+		m_entityList.push_back(temp);
+	}
+	for (int i = 0; i < monsterParty.size(); i++)
+	{
+		Entity temp;
+		temp.entity = monsterParty[i];
+		temp.friendly = false;
+		m_entityList.push_back(temp);
+	}
 
-	playerPos = m_player->GetPosition();
-	monsterPos = m_monster->GetPosition();
-
-	m_player->SetPosition(Game::SCREEN_WIDTH / 2 + 100, Game::SCREEN_HEIGHT / 2);
-	m_player->SetScale(3, 3);
-
-	m_monster->SetPosition(Game::SCREEN_WIDTH / 2 - 200, Game::SCREEN_HEIGHT / 2);
-	m_monster->SetScale(3, 3);
-	
 	damageText.setString("");
 	damageText.setFont(Game::font);
 	damageText.setCharacterSize(22);
-
-	turn = 0;
-	playerAtt = false;
 }
 
-Player* Battle::GetPlayer()
+void Battle::calculateTurnOrder()
 {
-	return m_player;
+	/*for (int i = 0; i < m_entityList.size(); i++)
+	{
+		m_entityList[i].entity->GetStat()
+	}*/
 }
 
-Monster* Battle::GetMonster()
+Entity& Battle::GetTarget()
 {
-	return m_monster;
+	return m_target;
+}
+Entity& Battle::GetActiveEntity()
+{
+	return m_activeEntity;
+}
+
+std::vector<Monster*>& Battle::GetMonsterParty()
+{
+	return m_monsterParty;
+}
+
+void Battle::SetTarget(VisibleGameObject& target, bool friendly)
+{
+	m_target.entity = &target;
+	m_target.friendly = friendly;
+}
+
+void Battle::ClearTarget()
+{
+	m_target.entity = NULL;
+}
+
+void Battle::ClearActiveEntity()
+{
+	m_activeEntity.entity = NULL;
+}
+
+void Battle::SetActiveEntity(VisibleGameObject& target, bool friendly)
+{
+	m_activeEntity.entity = &target;
+	m_activeEntity.friendly = friendly;
 }
 
 sf::Vector2f Battle::GetPlayerPos()

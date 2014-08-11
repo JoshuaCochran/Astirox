@@ -220,20 +220,23 @@ bool Player::checkCollision(Map& map, float x, float y)
 	{
 		for (int i = 0; i < map.GetSpawnedMonsters().size(); i++)
 		{
-			if (map.GetSpawnedMonsters()[i] != NULL)
+			for (int j = 0; j < map.GetSpawnedMonsters()[i].size(); j++)
 			{
-				sf::Rect<float> mBB = map.GetSpawnedMonsters()[i]->GetBoundingRect();
-				sf::Rect<float> pBB = GetBoundingRect();
-				pBB.left += x;
-				pBB.top += y;
-				if (mBB.intersects(pBB))
+				if (map.GetSpawnedMonsters()[i][j] != NULL)
 				{
-					//ServiceLocator::GetAudio()->PlaySound("audio/jingles_NES00.ogg");
-					Battle* combat = new Battle(*this, *map.GetSpawnedMonsters()[i]);
-					combat->SetTurn(0);
-					Game::startBattle(combat);
-					GetSprite().move(-x, -y);
-					return true;
+					sf::Rect<float> mBB = map.GetSpawnedMonsters()[i][j]->GetBoundingRect();
+					sf::Rect<float> pBB = GetBoundingRect();
+					pBB.left += x;
+					pBB.top += y;
+					if (mBB.intersects(pBB))
+					{
+						//ServiceLocator::GetAudio()->PlaySound("audio/jingles_NES00.ogg");
+						Battle* combat = new Battle(Game::playerParty, map.GetSpawnedMonsters()[i], false);
+						combat->SetTurn(0);
+						Game::startBattle(combat);
+						GetSprite().move(-x, -y);
+						return true;
+					}
 				}
 			}
 		}
@@ -296,6 +299,9 @@ int Player::GetDefense() const
 void Player::AddHP(int hp)
 {
 	stats[ePlayerStats::curHP] += hp;
+	if (stats[ePlayerStats::curHP] <= 0)
+		GetSprite().rotate(-90.0f);
+	else GetSprite().setRotation(0);
 }
 
 void Player::GainXP(int num)
@@ -324,15 +330,17 @@ void Player::UpdateStats()
 	LuaRef calculateXPToLevel = luabridge::getGlobal(player_lua_state, "calculateXPToLevel");
 	LuaRef calculateResistance = luabridge::getGlobal(player_lua_state, "calculateResistance");
 	LuaRef calculateDefense = luabridge::getGlobal(player_lua_state, "calculateDefense");
+	LuaRef calculateSpeed = luabridge::getGlobal(player_lua_state, "calculateSpeed");
 
 	stats[ePlayerStats::str] = (baseStats[baseStats::str] + gearStats[eEquipmentStats::Strength]) * statModifiers[statModifiers::str];
 	stats[ePlayerStats::dex] = (baseStats[baseStats::dex] + gearStats[eEquipmentStats::Dexterity]) * statModifiers[statModifiers::dex];
-	stats[ePlayerStats::intel] = (baseStats[baseStats::intel] + gearStats[eEquipmentStats::Intelligence]) * statModifiers[statModifiers::intel];;
-	stats[ePlayerStats::wis] = (baseStats[baseStats::wis] + gearStats[eEquipmentStats::Wisdom]) * statModifiers[statModifiers::wis];;
-	stats[ePlayerStats::stam] = (baseStats[baseStats::stam] + gearStats[eEquipmentStats::Stamina]) * statModifiers[statModifiers::stam];;
+	stats[ePlayerStats::intel] = (baseStats[baseStats::intel] + gearStats[eEquipmentStats::Intelligence]) * statModifiers[statModifiers::intel];
+	stats[ePlayerStats::wis] = (baseStats[baseStats::wis] + gearStats[eEquipmentStats::Wisdom]) * statModifiers[statModifiers::wis];
+	stats[ePlayerStats::stam] = (baseStats[baseStats::stam] + gearStats[eEquipmentStats::Stamina]) * statModifiers[statModifiers::stam];
 	stats[ePlayerStats::maxHP] = calculateHP();
 	stats[ePlayerStats::maxMP] = calculateMP();
-	stats[ePlayerStats::wdmg] = (baseStats[baseStats::wdmg] + gearStats[eEquipmentStats::Damage]) * statModifiers[statModifiers::wdmg];;
+	stats[ePlayerStats::wdmg] = (baseStats[baseStats::wdmg] + gearStats[eEquipmentStats::Damage]) * statModifiers[statModifiers::wdmg];
+	stats[ePlayerStats::speed] = calculateSpeed();
 
 	stats[ePlayerStats::pATT] = calculatePATT();
 	stats[ePlayerStats::mATT] = calculateMATT();
@@ -372,7 +380,7 @@ void Player::AddStat(int stat, int num)
 	UpdateStats();
 }
 
-int Player::GetStat(int stat)
+int Player::GetStat(int stat) const
 {
 	if ((sizeof(stats) / sizeof(stats[0])) >= stat)
 		return stats[stat];
@@ -432,6 +440,8 @@ int Player::GetBaseStat(std::string stat)
 		return stats[ePlayerStats::gold];
 	else if (boost::iequals(stat, "wdmg") || boost::iequals(stat, "weapon damage"))
 		return stats[ePlayerStats::wdmg];
+	else if (boost::iequals(stat, "speed") || boost::iequals(stat, "Speed"))
+		return stats[ePlayerStats::speed];
 	else
 		return 0;
 }

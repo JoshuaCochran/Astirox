@@ -39,6 +39,8 @@ void GuiObjectManager::Init()
 	VisibleGameObject *playerHud = new VisibleGameObject("data/images/gui/player hud rbg.png");
 	playerHud->SetPosition(hud_pos_x, hud_pos_y);
 
+	VisibleGameObject *hudSelected = new VisibleGameObject("data/images/gui/player hud-selected.png");
+
 	VisibleGameObject *hpBar = new VisibleGameObject("data/images/gui/hp bar.png");
 	hpBar->SetPosition(hp_pos_x, hp_pos_y);
 
@@ -123,6 +125,7 @@ void GuiObjectManager::Init()
 	this->Add("item select box", itemSelect);
 	this->Add("use button", itemUseButton);
 	this->Add("drop button", itemDropButton);
+	this->Add("ahud selected", hudSelected);
 
 	// Battle Specific GUI
 	VisibleGameObject *spellIconBorder = new VisibleGameObject("data/border.png");
@@ -153,14 +156,38 @@ void GuiObjectManager::DrawOOCGUI(sf::RenderWindow& renderWindow, sf::Event& cur
 {
 	DrawInventory(renderWindow, currentEvent, player);
 	DrawStatMenu(renderWindow, currentEvent, player);
-	DrawHUD(renderWindow, currentEvent, player);
+	for (int i = 0; i < Game::playerParty.size(); i++)
+		DrawHUD(renderWindow, currentEvent, *Game::playerParty[i], sf::Vector2f(792, i * 70), false);
 }
 
 bool GuiObjectManager::DrawCombatGUI(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Battle& battle)
 {
 	Get("combat background")->Draw(renderWindow);
-	DrawMonsterHUD(renderWindow, *battle.GetMonster());
-	DrawHUD(renderWindow, currentEvent, *battle.GetPlayer());
+	for (int i = 0; i < battle.GetMonsterParty().size(); i++)
+	{
+		if (battle.GetActiveEntity().friendly
+			&& battle.GetMonsterParty()[i]->GetBoundingRect().contains(sf::Mouse::getPosition(renderWindow).x, sf::Mouse::getPosition(renderWindow).y))
+		{
+			if (currentEvent.type == sf::Event::MouseButtonReleased)
+				battle.SetTarget(*battle.GetMonsterParty()[i], false);
+		}
+		if (!battle.GetTarget().friendly 
+			&& dynamic_cast<Monster*>(battle.GetTarget().entity) == battle.GetMonsterParty()[i])
+			DrawMonsterHUD(renderWindow, *battle.GetMonsterParty()[i], sf::Vector2f(0, i * 72), true);
+		else DrawMonsterHUD(renderWindow, *battle.GetMonsterParty()[i], sf::Vector2f(0, i * 72), false);
+	}
+	for (int i = 0; i < Game::playerParty.size(); i++)
+	{
+		if (battle.GetActiveEntity().friendly 
+			&& Game::playerParty[i]->GetBoundingRect().contains(sf::Mouse::getPosition(renderWindow).x, sf::Mouse::getPosition(renderWindow).y))
+		{
+			if (currentEvent.type == sf::Event::MouseButtonReleased)
+				battle.SetTarget(*Game::playerParty[i], true);
+		}
+		if (battle.GetTarget().entity == Game::playerParty[i])
+			DrawHUD(renderWindow, currentEvent, *Game::playerParty[i], sf::Vector2f(792, i * 70), true);
+		else DrawHUD(renderWindow, currentEvent, *Game::playerParty[i], sf::Vector2f(792, i * 70), false);
+	}
 	DrawAttackButton(renderWindow, currentEvent, battle, 0, Game::SCREEN_HEIGHT - 136, 0);
 	return true;
 }
@@ -171,18 +198,32 @@ bool GuiObjectManager::DrawAttackButton(sf::RenderWindow& renderWindow, sf::Even
 	Get("icon test")->SetPosition(posx + 2, posy);
 	if (Get("spell icon border")->GetBoundingRect().contains(sf::Mouse::getPosition(renderWindow).x, sf::Mouse::getPosition(renderWindow).y))
 	{
-		if (currentEvent.type == sf::Event::MouseButtonReleased && battle.GetTurn() == 0)
+		if (currentEvent.type == sf::Event::MouseButtonReleased && battle.GetActiveEntity().friendly && battle.GetTarget().entity != NULL)
 		{
+			Player* player1 = dynamic_cast<Player*>(battle.GetActiveEntity().entity);
+			Monster* targetEntity = dynamic_cast<Monster*>(battle.GetTarget().entity);
+			
 			//battle.GetDamageText().setString(BasicPhysAttack(*battle.GetPlayer(), *battle.GetMonster()));
-			battle.GetDamageText().setString(battle.GetPlayer()->GetSpellInventory()[0](*battle.GetPlayer(), *battle.GetMonster()));
-			battle.GetDamageText().setPosition(battle.GetMonster()->GetPosition().x, battle.GetMonster()->GetPosition().y - 32);
+			battle.GetDamageText().setString(player1->GetSpellInventory()[0](*player1, *targetEntity));
+			battle.GetDamageText().setPosition(targetEntity->GetPosition().x, targetEntity->GetPosition().y - 32);
 			Game::GetAnimationManager().SetSpellAnimation(Game::GetAnimationManager().GetAnimation("fire lion left"));
-			Game::GetAnimationManager().GetSpellSprite()->setPosition(battle.GetPlayer()->GetPosition().x - 128, battle.GetPlayer()->GetPosition().y - 64);
+			Game::GetAnimationManager().GetSpellSprite()->setPosition(player1->GetPosition().x - 128, player1->GetPosition().y - 64);
 			battle.GetTextFadeClock().restart();
 			battle.GetTurnTimer().restart();
 			battle.GetSpellFrameClock().restart();
-			battle.SetTurn(1);
-			battle.SetPlayerAtt(true);
+			battle.ClearTarget();
+			battle.SetActiveEntity(*battle.GetMonsterParty()[0], false);
+			if (battle.GetMonsterParty()[0]->GetCurrentHP() <= 0)
+				battle.SetActiveEntity(*battle.GetMonsterParty()[1], false);
+
+			int monsterDeadCount = 0;
+			for (int i = 0; i < battle.GetMonsterParty().size(); i++)
+			{
+				if (battle.GetMonsterParty()[i]->GetCurrentHP() <= 0)
+					monsterDeadCount++;
+			}
+			if (monsterDeadCount == battle.GetMonsterParty().size())
+				battle.ClearActiveEntity();
 
 			return true;
 		}
@@ -205,7 +246,7 @@ void GuiObjectManager::UpdateMonsterResources(sf::RenderWindow& renderWindow, Mo
 	//_guiObjects.find("mp bar")->second->SetScale(1.0f * player.GetCurrentMP() / player.GetMaxMP(), 1);
 }
 
-void GuiObjectManager::DrawHUD(sf::RenderWindow& renderWindow, sf::Event currentEvent, Player& player)
+void GuiObjectManager::DrawHUD(sf::RenderWindow& renderWindow, sf::Event currentEvent, Player& player, sf::Vector2f HUDpos, bool selected)
 {
 
 	sf::Rect<float> BoundingRect(Get("ahud")->GetPosition(), sf::Vector2f(Get("ahud")->GetWidth() * 2.0f, Get("ahud")->GetHeight() * 2.0f));
@@ -236,7 +277,8 @@ void GuiObjectManager::DrawHUD(sf::RenderWindow& renderWindow, sf::Event current
 			Get("ahud")->SetPosition(Get("ahud")->GetPosition().x, 0);
 
 	}
-
+	Get("ahud")->SetPosition(HUDpos);
+	Get("ahud selected")->SetPosition(Get("ahud")->GetPosition());
 	int hp_pos_x = Get("ahud")->GetPosition().x + 76;
 	int mp_pos_x = hp_pos_x;
 	int xp_pos_x = mp_pos_x;
@@ -253,7 +295,10 @@ void GuiObjectManager::DrawHUD(sf::RenderWindow& renderWindow, sf::Event current
 	Get("portrait")->SetPosition(portrait_pos_x, portrait_pos_y);
 
 	UpdateResources(renderWindow, player);
-	_guiObjects.find("ahud")->second->Draw(renderWindow);
+	if (selected)
+		_guiObjects.find("ahud selected")->second->Draw(renderWindow);
+	else
+		_guiObjects.find("ahud")->second->Draw(renderWindow);
 	_guiObjects.find("portrait")->second->Draw(renderWindow);
 	_guiObjects.find("hp bar")->second->Draw(renderWindow);
 	_guiObjects.find("mp bar")->second->Draw(renderWindow);
@@ -404,10 +449,28 @@ void GuiObjectManager::DropItemButton(sf::RenderWindow& renderWindow, sf::Event&
 	}
 }
 
-void GuiObjectManager::DrawMonsterHUD(sf::RenderWindow& renderWindow, Monster& monster)
+void GuiObjectManager::DrawMonsterHUD(sf::RenderWindow& renderWindow, Monster& monster, sf::Vector2f HUDpos, bool selected)
 {
 	UpdateMonsterResources(renderWindow, monster);
-	_guiObjects.find("aMonsterHUD")->second->Draw(renderWindow);
+	_guiObjects.find("ahud selected")->second->SetPosition(HUDpos);
+	_guiObjects.find("aMonsterHUD")->second->SetPosition(HUDpos);
+	int hp_pos_x = Get("aMonsterHUD")->GetPosition().x + 76;
+	int mp_pos_x = hp_pos_x;
+	int xp_pos_x = mp_pos_x;
+
+	int hp_pos_y = Get("aMonsterHUD")->GetPosition().y + 11;
+	int mp_pos_y = hp_pos_y + 20;
+	int xp_pos_y = mp_pos_y + 20;
+	int portrait_pos_y = Get("ahud")->GetPosition().y + 18;
+
+	_guiObjects.find("monster HP bar")->second->SetPosition(hp_pos_x, hp_pos_y);
+	//Get("mp bar")->SetPosition(mp_pos_x, mp_pos_y);
+	//Get("xp bar")->SetPosition(xp_pos_x, xp_pos_y);
+
+	if (selected)
+		_guiObjects.find("ahud selected")->second->Draw(renderWindow);
+	else
+		_guiObjects.find("aMonsterHUD")->second->Draw(renderWindow);
 	_guiObjects.find("monster HP bar")->second->Draw(renderWindow);
 	//_guiObjects.find("monster MP bar")->second->Draw(renderWindow);
 	//_guiObjects.find("monster XP bar")->second->Draw(renderWindow);

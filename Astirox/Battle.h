@@ -4,18 +4,31 @@
 #include "Player.h"
 #include "Monster.h"
 
+struct Entity
+{
+	VisibleGameObject* entity;
+	bool friendly;
+};
+
 class Battle
 {
 public:
-	Battle(Player& player1, Monster& monster1);
+	Battle(std::vector<Player*>& playerParty, std::vector<Monster*>& monsterParty, bool ambush);
 	~Battle();
-
-	Player* GetPlayer();
-	Monster* GetMonster();
 
 	sf::Vector2f GetPlayerPos();
 	sf::Vector2f GetMonsterPos();
 	sf::Text& GetDamageText();
+
+	Entity& GetTarget();
+	Entity& GetActiveEntity();
+	std::vector<Entity>& GetTurnOrder();
+	void SetTarget(VisibleGameObject& target, bool friendly);
+	void SetActiveEntity(VisibleGameObject& target, bool friendly);
+	void ClearTarget();
+	void ClearActiveEntity();
+
+	std::vector<Monster*>& GetMonsterParty();
 	
 	int GetTurn();
 	void SetTurn(int num);
@@ -27,9 +40,16 @@ public:
 	sf::Clock& GetTextFadeClock();
 
 private:
-	Player* m_player;
-	Monster* m_monster;
+	std::vector<Player*> m_playerParty;
+	std::vector<Monster*> m_monsterParty;
+	std::vector<Entity> m_turnOrder;
+	std::vector<Entity> m_entityList;
 	
+	void calculateTurnOrder();
+
+	Entity m_target;
+	Entity m_activeEntity;
+
 	int turn;
 	bool playerAtt;
 

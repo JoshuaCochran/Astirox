@@ -22,3 +22,7 @@ t_monster = {
 		mainboss = false;
 	}
 }
+
+<?xml version="1.0" encoding="utf-8"?>
+<Monsters>
+	<Monster name="Test Monster", type="Demon", level=1, displayname="test demon">

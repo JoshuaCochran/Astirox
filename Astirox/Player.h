@@ -23,7 +23,7 @@ namespace ePlayerStats
 	enum ePlayerStats
 	{
 		str, dex, intel, wis, stam, maxHP, curHP, maxMP, curMP, defense, res, pATT, rATT, mATT,
-		ACC, avoid, CC, CHD, level, statPts, curXP, xpNeeded, gold, wdmg, enchant
+		ACC, avoid, CC, CHD, level, statPts, curXP, xpNeeded, gold, wdmg, enchant, speed
 	};
 }
 
@@ -78,7 +78,7 @@ public:
 	void LevelUp();
 	void UpdateStats();
 	void AddStat(int stat, int num);
-	int GetStat(int stat);
+	int GetStat(int stat) const;
 	//int GetGearStat(int stat);
 	
 	int GetBaseStat(std::string stat);

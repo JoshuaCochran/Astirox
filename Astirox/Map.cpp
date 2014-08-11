@@ -29,10 +29,13 @@ Map::Map(std::string filename)
 				sf::Rect<float> spawnZone(sf::Vector2f(object->GetPosition().x - 32, object->GetPosition().y - 32), sf::Vector2f(80, 80));
 				for (int i = 0; i < spawnedMonsters.size(); i++)
 				{
-					sf::Rect<float> mBB = spawnedMonsters[i]->GetBoundingRect();
-					if (mBB.intersects(spawnZone))
+					for (int j = 0; j < spawnedMonsters[i].size(); j++)
 					{
-						monsterInSpawnZone = true;
+						sf::Rect<float> mBB = spawnedMonsters[i][j]->GetBoundingRect();
+						if (mBB.intersects(spawnZone))
+						{
+							monsterInSpawnZone = true;
+						}
 					}
 				}
 				if (!monsterInSpawnZone)
@@ -40,25 +43,35 @@ Map::Map(std::string filename)
 					if (object->GetPropertyString("rarity") != "" && object->GetName() != "")
 					{
 						++mobMax;
-						double rarity = boost::lexical_cast<int>(object->GetPropertyString("rarity"));
-						CheckSpawnIntersection(object, rarity, checked);
-						spawnCandidates.push_back(object->GetName());
-						candidateRarities.push_back(boost::lexical_cast<double>(object->GetPropertyString("rarity")));
-						for (int i = 0; i < candidateRarities.size(); i++)
+						int k = 0;
+						while (k < 4)
 						{
-							candidateRarities[i] = candidateRarities[i] / rarity;
-						}
-						boost::random::discrete_distribution<> dist(candidateRarities.begin(), candidateRarities.end());
-						std::string monsterToSpawn = spawnCandidates[dist(Game::rng)];
-						Monster* mon = new Monster(monsterToSpawn);
-						sf::Vector2f objectPos(object->GetPosition().x + 8.0f, object->GetPosition().y + 8.0f);
-						mon->SetPosition(objectPos);
-						spawnedMonsters.push_back(mon);
+							double rarity = boost::lexical_cast<int>(object->GetPropertyString("rarity"));
+							CheckSpawnIntersection(object, rarity, checked);
+							spawnCandidates.push_back(object->GetName());
+							candidateRarities.push_back(boost::lexical_cast<double>(object->GetPropertyString("rarity")));
+							for (int i = 0; i < candidateRarities.size(); i++)
+							{
+								candidateRarities[i] = candidateRarities[i] / rarity;
+							}
+							boost::random::discrete_distribution<> dist(candidateRarities.begin(), candidateRarities.end());
+							std::string monsterToSpawn = spawnCandidates[dist(Game::rng)];
+							Monster* mon = new Monster(monsterToSpawn);
+							sf::Vector2f objectPos(object->GetPosition().x + 8.0f, object->GetPosition().y + 8.0f);
+							mon->SetPosition(objectPos);
+							spawningMonsterParty.push_back(mon);
+							for (int i = 0; i < spawnCandidates.size(); i++)
+								spawnCandidates.pop_back();
+							for (int i = 0; i < candidateRarities.size(); i++)
+								candidateRarities.pop_back();
 
-						for (int i = 0; i < spawnCandidates.size(); i++)
-							spawnCandidates.pop_back();
-						for (int i = 0; i < candidateRarities.size(); i++)
-							candidateRarities.pop_back();
+
+							k += mon->GetSizeInParty();
+
+						}
+						spawnedMonsters.push_back(spawningMonsterParty);
+						for (int i = 0; i < spawningMonsterParty.size(); i++)
+							spawningMonsterParty.pop_back();
 					}
 				}
 			}
@@ -232,7 +245,8 @@ Map::Map(std::string filename)
 Map::~Map()
 {
 	for (int i = 0; i < spawnedMonsters.size(); i++)
-		delete spawnedMonsters[i];
+		for (int j = 0; j < spawnedMonsters[i].size(); j++)
+			delete spawnedMonsters[i][j];
 	for (int i = 0; i < equipmentOnFloor.size(); i++)
 		delete equipmentOnFloor[i];
 	delete map_lua_state;
@@ -306,9 +320,9 @@ void Map::DrawAll(sf::RenderWindow& renderWindow)
 				for (int j = 0; j < spawnedMonsters.size(); j++)
 				{
 
-					if (fogOfWar[i].sprite.getGlobalBounds().intersects(spawnedMonsters[j]->GetBoundingRect()))
+					if (fogOfWar[i].sprite.getGlobalBounds().intersects(spawnedMonsters[j][0]->GetBoundingRect()))
 					{
-						spawnedMonsters[j]->Draw(renderWindow);
+						spawnedMonsters[j][0]->Draw(renderWindow);
 					}
 				}
 				for (int j = 0; j < equipmentOnFloor.size(); j++)
@@ -326,7 +340,7 @@ void Map::DrawAll(sf::RenderWindow& renderWindow)
 void Map::UpdateMonsters()
 {
 	for (int i = 0; i < spawnedMonsters.size(); i++)
-		spawnedMonsters[i]->Update(*this);
+		spawnedMonsters[i][0]->Update(*this);
 }
 
 void Map::AddSpawnCandidate(std::string filename, double rarity)
@@ -360,13 +374,13 @@ void Map::SpawnMonster()
 				sf::Rect<float> spawnZone(sf::Vector2f(object->GetPosition().x - 32, object->GetPosition().y - 32), sf::Vector2f(80, 80));
 				for (int i = 0; i < spawnedMonsters.size(); i++)
 				{
-					sf::Rect<float> mBB = spawnedMonsters[i]->GetBoundingRect();
+					sf::Rect<float> mBB = spawnedMonsters[i][0]->GetBoundingRect();
 					if (mBB.intersects(spawnZone))
 					{
 						monsterInSpawnZone = true;
 					}
 				}
-				if (!monsterInSpawnZone)
+				/*if (!monsterInSpawnZone)
 				{
 					double rarity = boost::lexical_cast<int>(object->GetPropertyString("rarity"));
 					spawnCandidates.push_back(object->GetName());
@@ -383,13 +397,49 @@ void Map::SpawnMonster()
 						spawnCandidates.pop_back();
 					for (int i = 0; i < candidateRarities.size(); i++)
 						candidateRarities.pop_back();
+				}*/
+				if (!monsterInSpawnZone)
+				{
+					if (object->GetPropertyString("rarity") != "" && object->GetName() != "")
+					{
+						++mobMax;
+						int k = 0;
+						while (k < monsterPartySize)
+						{
+							double rarity = boost::lexical_cast<int>(object->GetPropertyString("rarity"));
+							CheckSpawnIntersection(object, rarity, checked);
+							spawnCandidates.push_back(object->GetName());
+							candidateRarities.push_back(boost::lexical_cast<double>(object->GetPropertyString("rarity")));
+							for (int i = 0; i < candidateRarities.size(); i++)
+							{
+								candidateRarities[i] = candidateRarities[i] / rarity;
+							}
+							boost::random::discrete_distribution<> dist(candidateRarities.begin(), candidateRarities.end());
+							std::string monsterToSpawn = spawnCandidates[dist(Game::rng)];
+							Monster* mon = new Monster(monsterToSpawn);
+							sf::Vector2f objectPos(object->GetPosition().x + 8.0f, object->GetPosition().y + 8.0f);
+							mon->SetPosition(objectPos);
+							spawningMonsterParty.push_back(mon);
+							for (int i = 0; i < spawnCandidates.size(); i++)
+								spawnCandidates.pop_back();
+							for (int i = 0; i < candidateRarities.size(); i++)
+								candidateRarities.pop_back();
+
+
+							k += mon->GetSizeInParty();
+
+						}
+						spawnedMonsters.push_back(spawningMonsterParty);
+						for (int i = 0; i < spawningMonsterParty.size(); i++)
+							spawningMonsterParty.pop_back();
+					}
 				}
 			}
 		}
 	}
 }
 
-std::vector<Monster*>& Map::GetSpawnedMonsters()
+std::vector<std::vector<Monster*>>& Map::GetSpawnedMonsters()
 {
 	return spawnedMonsters;
 }

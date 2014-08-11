@@ -44,7 +44,7 @@ public:
 
 	static boost::mt19937 rng;
 
-	static std::vector<Equipment*> equipmentOnFloor;
+	static std::vector<Player*> playerParty;
 
 	static sf::Font font;
 	static void wordWrap(std::string text);

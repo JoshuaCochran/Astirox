@@ -44,7 +44,7 @@ public:
 	void DrawAll(sf::RenderWindow& renderWindow);
 	void UpdateMonsters();
 	tmx::MapLoader* GetMapLoader();
-	std::vector<Monster*>& GetSpawnedMonsters();
+	std::vector<std::vector<Monster*>>& GetSpawnedMonsters();
 	std::vector<Equipment*>& GetEquipmentOnFloor();
 
 	int GetMovesSinceSpawn();
@@ -86,8 +86,11 @@ private:
 	std::vector<sf::Vector2f> spawnLocs;
 	std::vector<std::string> spawnCandidates;
 	std::vector<double> candidateRarities;
-	std::vector<Monster*> spawnedMonsters;
+	std::vector<Monster*> spawningMonsterParty;
+	std::vector<std::vector<Monster*>> spawnedMonsters;
 	std::vector<Equipment*> equipmentOnFloor;
+
+	const int monsterPartySize = 4;
 	
 	sf::Texture fogTexture;
 	std::vector<s_FogOfWar> fogOfWar;

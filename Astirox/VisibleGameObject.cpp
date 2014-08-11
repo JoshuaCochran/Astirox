@@ -110,6 +110,10 @@ sf::Vector2f VisibleGameObject::GetPosition() const
 	return sf::Vector2f();
 }
 
+int VisibleGameObject::GetStat(int stat) const
+{
+	return 0;
+}
 
 
 sf::Sprite& VisibleGameObject::GetSprite()
@@ -163,3 +167,4 @@ sf::Rect<float> VisibleGameObject::GetBoundingRect() const
 {
 	return _sprite.getGlobalBounds();
 }
+

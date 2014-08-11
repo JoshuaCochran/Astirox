@@ -13,6 +13,31 @@ extern "C" {
 
 using namespace luabridge;
 
+namespace eMonsterStats
+{
+	enum eMonsterStats 
+	{
+		defense, maxHP, curHP, maxMP, curMP, pATT, mATT, ACC, 
+		avoid, CC, CHD, level, wdmg, baseXP, baseGold, boss, miniboss, speed
+	};
+}
+
+namespace eElementalResistances
+{
+	enum eElementalResistances
+	{
+		Physical, Fire, Ice, Lightning, Earth, Air, Holy, Dark
+	};
+}
+
+namespace eAilmentResistances
+{
+	enum eAilmentResistances
+	{
+		Poison, Blind, Silence, Sleep, Paralysis, Confuse, Charm, Burn, Frozen, Stun
+	};
+}
+
 class Monster :
 	public VisibleGameObject
 {
@@ -32,14 +57,20 @@ public:
 
 	int GetCurrentHP();
 	int GetMaxHP();
-	int GetMP();
+	int GetCurrentMP();
+	int GetMaxMP();
 	int GetXPReward();
 	int GetGoldReward();
 	int GetLevel();
 	int GetMinDmg();
 	int GetMaxDmg();
 	int GetDefense();
+	int GetStat(int stat) const;
 	std::string GetName();
+
+	int GetSizeInParty() const;
+
+	sf::Sprite& GetSelectedSprite();
 
 	bool IsMiniBoss();
 	bool IsMainBoss();
@@ -63,15 +94,12 @@ private:
 	lua_State* monster_lua_state;
 
 	std::string name;
-	int def;
-	int level;
-	int minDmg;
-	int maxDmg;
-	int currentHP;
-	int maxHP;
-	int MP;
-	int goldReward;
-	int xpReward;
+	int stats[17];
+	int elementalresistances[7];
+	int ailmentresistances[9];
+	int sizeInParty;
+
+	sf::Sprite selectedSprite;
 
 	double statModifiers[14];
 

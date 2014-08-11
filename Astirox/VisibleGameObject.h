@@ -32,6 +32,9 @@ public:
 
 	virtual sf::Rect<float> GetBoundingRect() const;
 
+	// Living Entity Functions
+	virtual int GetStat(int stat) const;
+
 	const static int MOVE_SPEED = 16;
 
 protected:

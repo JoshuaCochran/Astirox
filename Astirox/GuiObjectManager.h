@@ -21,8 +21,8 @@ public:
 	
 	void DrawOOCGUI(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player);
 	bool DrawCombatGUI(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Battle& battle);
-	void DrawHUD(sf::RenderWindow& renderWindow, sf::Event currentEvent, Player& player);
-	void DrawMonsterHUD(sf::RenderWindow& renderWindow, Monster& monster);
+	void DrawHUD(sf::RenderWindow& renderWindow, sf::Event currentEvent, Player& player, sf::Vector2f HUDpos, bool selected);
+	void DrawMonsterHUD(sf::RenderWindow& renderWindow, Monster& monster, sf::Vector2f HUDpos, bool selected);
 	bool DrawInventory(sf::RenderWindow& renderWindow, sf::Event currentEvent, Player& player);
 	void DrawStatMenu(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player);
 	void DrawStatButton(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player, int posx, int posy, int stat);
