@@ -4,11 +4,14 @@
 #include "Player.h"
 #include "Monster.h"
 
-struct Entity
+/*struct Entity
 {
 	VisibleGameObject* entity;
 	bool friendly;
-};
+};*/
+
+class Player;
+class Monster;
 
 class Battle
 {
@@ -23,8 +26,8 @@ public:
 	Entity& GetTarget();
 	Entity& GetActiveEntity();
 	std::vector<Entity>& GetTurnOrder();
-	void SetTarget(VisibleGameObject& target, bool friendly);
-	void SetActiveEntity(VisibleGameObject& target, bool friendly);
+	void SetTarget(Entity* target, bool friendly);
+	void SetActiveEntity(Entity* target, bool friendly);
 	void ClearTarget();
 	void ClearActiveEntity();
 
@@ -64,9 +67,9 @@ private:
 };
 
 bool fight(sf::RenderWindow& renderWindow, Player& player, Monster& monster);
-std::string BasicPhysAttack(Player& player, Monster& monster);
-std::string PlayerAttackResolve(Player& player, Monster& monster, int damage);
-std::string MonsterAttackResolve(Player& player, Monster & mon, int damage);
+std::string BasicPhysAttack(Entity& player, Entity& monster);
+std::string PlayerAttackResolve(Entity& player, Entity& monster, int damage);
+std::string MonsterAttackResolve(Player& player, Monster& mon, int damage);
 std::string MonsterAttack(Player& player, Monster & mon);
 
 #endif

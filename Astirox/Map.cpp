@@ -17,67 +17,6 @@ Map::Map(std::string filename)
 	mapLoader = new tmx::MapLoader("data/maps");
 	mapLoader->Load(tmxFile);
 
-	sf::Vector2f spawnZone(16 * 4.0f, 16 * 4.0f);
-	for (auto layer = GetMapLoader()->GetLayers().begin(); layer != GetMapLoader()->GetLayers().end(); ++layer)
-	{
-		if (layer->name == "MonsterSpawn")
-		{
-			std::vector<std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject>>::_Val_types>::_Myt>> checked;
-			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
-			{
-				bool monsterInSpawnZone = false;
-				sf::Rect<float> spawnZone(sf::Vector2f(object->GetPosition().x - 32, object->GetPosition().y - 32), sf::Vector2f(80, 80));
-				for (int i = 0; i < spawnedMonsters.size(); i++)
-				{
-					for (int j = 0; j < spawnedMonsters[i].size(); j++)
-					{
-						sf::Rect<float> mBB = spawnedMonsters[i][j]->GetBoundingRect();
-						if (mBB.intersects(spawnZone))
-						{
-							monsterInSpawnZone = true;
-						}
-					}
-				}
-				if (!monsterInSpawnZone)
-				{
-					if (object->GetPropertyString("rarity") != "" && object->GetName() != "")
-					{
-						++mobMax;
-						int k = 0;
-						while (k < 4)
-						{
-							double rarity = boost::lexical_cast<int>(object->GetPropertyString("rarity"));
-							CheckSpawnIntersection(object, rarity, checked);
-							spawnCandidates.push_back(object->GetName());
-							candidateRarities.push_back(boost::lexical_cast<double>(object->GetPropertyString("rarity")));
-							for (int i = 0; i < candidateRarities.size(); i++)
-							{
-								candidateRarities[i] = candidateRarities[i] / rarity;
-							}
-							boost::random::discrete_distribution<> dist(candidateRarities.begin(), candidateRarities.end());
-							std::string monsterToSpawn = spawnCandidates[dist(Game::rng)];
-							Monster* mon = new Monster(monsterToSpawn);
-							sf::Vector2f objectPos(object->GetPosition().x + 8.0f, object->GetPosition().y + 8.0f);
-							mon->SetPosition(objectPos);
-							spawningMonsterParty.push_back(mon);
-							for (int i = 0; i < spawnCandidates.size(); i++)
-								spawnCandidates.pop_back();
-							for (int i = 0; i < candidateRarities.size(); i++)
-								candidateRarities.pop_back();
-
-
-							k += mon->GetSizeInParty();
-
-						}
-						spawnedMonsters.push_back(spawningMonsterParty);
-						for (int i = 0; i < spawningMonsterParty.size(); i++)
-							spawningMonsterParty.pop_back();
-					}
-				}
-			}
-		}
-	}
-
 	FOG_OF_WAR_HEIGHT = mapLoader->GetMapSize().y / 16;
 	FOG_OF_WAR_WIDTH = mapLoader->GetMapSize().x / 16;
 
@@ -104,7 +43,7 @@ Map::Map(std::string filename)
 	{
 		for (int i = 0; i < 64; i++)
 		{
-			opaque_map[i][j] = ".";
+			tile_map[i][j].object_type = ".";
 		}
 	}
 	for (auto layer = GetMapLoader()->GetLayers().begin(); layer != GetMapLoader()->GetLayers().end(); ++layer)
@@ -119,7 +58,7 @@ Map::Map(std::string filename)
 					{
 						if (object->Contains(sf::Vector2f(i * 16, j * 16)))
 						{
-							opaque_map[i][j] = "#";
+							tile_map[i][j].object_type = "#";
 						}
 					}
 				}
@@ -135,7 +74,7 @@ Map::Map(std::string filename)
 					{
 						if (object->Contains(sf::Vector2f(i * 16, j * 16)))
 						{
-							opaque_map[i][j] = "S";
+							tile_map[i][j].object_type = "S";
 						}
 					}
 				}
@@ -151,7 +90,7 @@ Map::Map(std::string filename)
 					{
 						if (object->Contains(sf::Vector2f(i * 16, j * 16)))
 						{
-							opaque_map[i][j] = "P";
+							tile_map[i][j].object_type = "P";
 						}
 					}
 				}
@@ -167,7 +106,7 @@ Map::Map(std::string filename)
 					{
 						if (object->Contains(sf::Vector2f(i * 16, j * 16)))
 						{
-							opaque_map[i][j] = ",";
+							tile_map[i][j].object_type = ",";
 						}
 					}
 				}
@@ -178,9 +117,75 @@ Map::Map(std::string filename)
 	{
 		for (int i = 0; i < 64; i++)
 		{
-			std::cout << opaque_map[i][j];
+			std::cout << tile_map[i][j].object_type;
 		}
 		std::cout << "\n";
+	}
+
+	//Spawn Monsters
+	sf::Vector2f spawnZone(16 * 4.0f, 16 * 4.0f);
+	for (auto layer = GetMapLoader()->GetLayers().begin(); layer != GetMapLoader()->GetLayers().end(); ++layer)
+	{
+		if (layer->name == "MonsterSpawn")
+		{
+			std::vector<std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject>>::_Val_types>::_Myt>> checked;
+			for (auto object = layer->objects.begin(); object != layer->objects.end(); ++object)
+			{
+				bool monsterInSpawnZone = false;
+				sf::Rect<float> spawnZone(sf::Vector2f(object->GetPosition().x - 32, object->GetPosition().y - 32), sf::Vector2f(80, 80));
+				for (int i = 0; i < spawnedMonsters.size(); i++)
+				{
+					sf::Rect<float> mBB = spawnedMonsters[i][0]->GetBoundingRect();
+					if (mBB.intersects(spawnZone))
+					{
+						monsterInSpawnZone = true;
+					}
+				}
+				if (!monsterInSpawnZone)
+				{
+					if (object->GetPropertyString("rarity") != "" && object->GetName() != "")
+					{
+						++mobMax;
+						int k = 0;
+						while (k < 4)
+						{
+							double rarity = boost::lexical_cast<int>(object->GetPropertyString("rarity"));
+
+							//CheckSpawnIntersection(object, rarity, checked);
+							spawnCandidates.push_back(object->GetName());
+							candidateRarities.push_back(boost::lexical_cast<double>(object->GetPropertyString("rarity")));
+							
+							for (int i = 0; i < candidateRarities.size(); i++)
+							{
+								candidateRarities[i] = candidateRarities[i] / rarity;
+							}
+							
+							boost::random::discrete_distribution<> dist(candidateRarities.begin(), candidateRarities.end());
+							
+							std::string monsterToSpawn = spawnCandidates[dist(Game::rng)];
+							Monster* mon = new Monster(monsterToSpawn);
+							sf::Vector2f objectPos(object->GetPosition().x + 8.0f, object->GetPosition().y + 8.0f);
+							mon->SetPosition(objectPos);
+							spawningMonsterParty.push_back(mon);
+							
+							for (int i = 0; i < spawnCandidates.size(); i++)
+								spawnCandidates.pop_back();
+							for (int i = 0; i < candidateRarities.size(); i++)
+								candidateRarities.pop_back();
+
+
+							k += mon->GetSizeInParty();
+
+						}
+						tile_map[(int)spawningMonsterParty[0]->GetPosition().x / 16][(int)spawningMonsterParty[0]->GetPosition().y / 16].object_type = "m";
+						tile_map[(int)spawningMonsterParty[0]->GetPosition().x / 16][(int)spawningMonsterParty[0]->GetPosition().y / 16].monster = spawningMonsterParty;
+						spawnedMonsters.push_back(spawningMonsterParty);
+						for (int i = 0; i < spawningMonsterParty.size(); i++)
+							spawningMonsterParty.pop_back();
+					}
+				}
+			}
+		}
 	}
 
 
@@ -578,7 +583,7 @@ void Map::set_visible(unsigned int x, unsigned int y, bool visible)
 
 void Map::set_map(sf::Vector2f point, std::string str)
 {
-	opaque_map[(int)point.x / 16][(int)point.y / 16] = str;
+	tile_map[(int)point.x / 16][(int)point.y / 16].object_type = str;
 }
 
 void Map::draw_map()
@@ -587,7 +592,7 @@ void Map::draw_map()
 	{
 		for (int i = 0; i < 64; i++)
 		{
-			std::cout << opaque_map[i][j];
+			std::cout << tile_map[i][j].object_type;
 		}
 		std::cout << "\n";
 	}
@@ -595,38 +600,43 @@ void Map::draw_map()
 
 bool Map::is_opaque(unsigned int x, unsigned int y)
 {
-	if (opaque_map[x / 16][y / 16] == "#" || opaque_map[x / 16][y / 16] == "S")
+	if (tile_map[x / 16][y / 16].object_type == "#" || tile_map[x / 16][y / 16].object_type == "S")
 		return true;
 	else return false;
 }
 
 bool Map::is_wall(sf::Vector2f point)
 {
-	if (opaque_map[(int)point.x / 16][(int)point.y / 16] == "#" 
-		|| opaque_map[(int)point.x / 16][(int)point.y / 16] == ",")
+	if (tile_map[(int)point.x / 16][(int)point.y / 16].object_type == "#" 
+		|| tile_map[(int)point.x / 16][(int)point.y / 16].object_type == ",")
 		return true;
 	else return false;
 }
 
 bool Map::is_portal(sf::Vector2f point)
 {
-	if (opaque_map[(int)point.x / 16][(int)point.y / 16] == "P")
+	if (tile_map[(int)point.x / 16][(int)point.y / 16].object_type == "P")
 		return true;
 	else return false;
 }
 
 bool Map::is_monster(sf::Vector2f point)
 {
-	if (opaque_map[(int)point.x / 16][(int)point.y / 16] == "m")
+	if (tile_map[(int)point.x / 16][(int)point.y / 16].object_type == "m")
 		return true;
 	else return false;
 }
 
 bool Map::is_player(sf::Vector2f point)
 {
-	if (opaque_map[(int)point.x / 16][(int)point.y / 16] == "@")
+	if (tile_map[(int)point.x / 16][(int)point.y / 16].object_type == "@")
 		return true;
 	else return false;
+}
+
+std::vector<Monster*>& Map::get_monster_at(sf::Vector2f point)
+{
+	return tile_map[(int)point.x / 16][(int)point.y / 16].monster;
 }
 
 int Map::get_fog_width() const

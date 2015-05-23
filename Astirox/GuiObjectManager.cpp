@@ -165,26 +165,26 @@ bool GuiObjectManager::DrawCombatGUI(sf::RenderWindow& renderWindow, sf::Event& 
 	Get("combat background")->Draw(renderWindow);
 	for (int i = 0; i < battle.GetMonsterParty().size(); i++)
 	{
-		if (battle.GetActiveEntity().friendly
+		if (battle.GetActiveEntity().isfriendly()
 			&& battle.GetMonsterParty()[i]->GetBoundingRect().contains(sf::Mouse::getPosition(renderWindow).x, sf::Mouse::getPosition(renderWindow).y))
 		{
 			if (currentEvent.type == sf::Event::MouseButtonReleased)
-				battle.SetTarget(*battle.GetMonsterParty()[i], false);
+				battle.SetTarget(battle.GetMonsterParty()[i], false);
 		}
-		if (!battle.GetTarget().friendly 
-			&& dynamic_cast<Monster*>(battle.GetTarget().entity) == battle.GetMonsterParty()[i])
+		if (!battle.GetTarget().isfriendly() 
+			&& &battle.GetTarget() == battle.GetMonsterParty()[i])
 			DrawMonsterHUD(renderWindow, *battle.GetMonsterParty()[i], sf::Vector2f(0, i * 72), true);
 		else DrawMonsterHUD(renderWindow, *battle.GetMonsterParty()[i], sf::Vector2f(0, i * 72), false);
 	}
 	for (int i = 0; i < Game::playerParty.size(); i++)
 	{
-		if (battle.GetActiveEntity().friendly 
+		if (battle.GetActiveEntity().isfriendly() 
 			&& Game::playerParty[i]->GetBoundingRect().contains(sf::Mouse::getPosition(renderWindow).x, sf::Mouse::getPosition(renderWindow).y))
 		{
 			if (currentEvent.type == sf::Event::MouseButtonReleased)
-				battle.SetTarget(*Game::playerParty[i], true);
+				battle.SetTarget(Game::playerParty[i], true);
 		}
-		if (battle.GetTarget().entity == Game::playerParty[i])
+		if (&battle.GetTarget() == Game::playerParty[i])
 			DrawHUD(renderWindow, currentEvent, *Game::playerParty[i], sf::Vector2f(792, i * 70), true);
 		else DrawHUD(renderWindow, currentEvent, *Game::playerParty[i], sf::Vector2f(792, i * 70), false);
 	}
@@ -198,28 +198,26 @@ bool GuiObjectManager::DrawAttackButton(sf::RenderWindow& renderWindow, sf::Even
 	Get("icon test")->SetPosition(posx + 2, posy);
 	if (Get("spell icon border")->GetBoundingRect().contains(sf::Mouse::getPosition(renderWindow).x, sf::Mouse::getPosition(renderWindow).y))
 	{
-		if (currentEvent.type == sf::Event::MouseButtonReleased && battle.GetActiveEntity().friendly && battle.GetTarget().entity != NULL)
+		Player* player1 = dynamic_cast<Player*>(&battle.GetActiveEntity());
+		if (currentEvent.type == sf::Event::MouseButtonReleased && battle.GetActiveEntity().isfriendly() && player1 != NULL)
 		{
-			Player* player1 = dynamic_cast<Player*>(battle.GetActiveEntity().entity);
-			Monster* targetEntity = dynamic_cast<Monster*>(battle.GetTarget().entity);
-			
 			//battle.GetDamageText().setString(BasicPhysAttack(*battle.GetPlayer(), *battle.GetMonster()));
-			battle.GetDamageText().setString(player1->GetSpellInventory()[0](*player1, *targetEntity));
-			battle.GetDamageText().setPosition(targetEntity->GetPosition().x, targetEntity->GetPosition().y - 32);
+			battle.GetDamageText().setString(player1->GetSpellInventory()[0](*player1, battle.GetTarget()));
+			battle.GetDamageText().setPosition(battle.GetTarget().GetPosition().x, battle.GetTarget().GetPosition().y - 32);
 			Game::GetAnimationManager().SetSpellAnimation(Game::GetAnimationManager().GetAnimation("fire lion left"));
 			Game::GetAnimationManager().GetSpellSprite()->setPosition(player1->GetPosition().x - 128, player1->GetPosition().y - 64);
 			battle.GetTextFadeClock().restart();
 			battle.GetTurnTimer().restart();
 			battle.GetSpellFrameClock().restart();
 			battle.ClearTarget();
-			battle.SetActiveEntity(*battle.GetMonsterParty()[0], false);
-			if (battle.GetMonsterParty()[0]->GetCurrentHP() <= 0)
-				battle.SetActiveEntity(*battle.GetMonsterParty()[1], false);
+			battle.SetActiveEntity(battle.GetMonsterParty()[0], false);
+			if (battle.GetMonsterParty()[0]->GetStat(Stats::curHP) <= 0)
+				battle.SetActiveEntity(battle.GetMonsterParty()[1], false);
 
 			int monsterDeadCount = 0;
 			for (int i = 0; i < battle.GetMonsterParty().size(); i++)
 			{
-				if (battle.GetMonsterParty()[i]->GetCurrentHP() <= 0)
+				if (battle.GetMonsterParty()[i]->GetStat(Stats::curHP) <= 0)
 					monsterDeadCount++;
 			}
 			if (monsterDeadCount == battle.GetMonsterParty().size())
@@ -235,15 +233,15 @@ bool GuiObjectManager::DrawAttackButton(sf::RenderWindow& renderWindow, sf::Even
 
 void GuiObjectManager::UpdateResources(sf::RenderWindow& renderWindow, Player& player)
 {
-	_guiObjects.find("hp bar")->second->SetScale(1.0f * player.GetCurrentHP() / player.GetMaxHP(), 1);
-	_guiObjects.find("mp bar")->second->SetScale(1.0f * player.GetCurrentMP() / player.GetMaxMP(), 1);
-	_guiObjects.find("xp bar")->second->SetScale(1.0f * player.GetCurrentXP() / player.GetXPNeeded(), 1);
+	_guiObjects.find("hp bar")->second->SetScale(1.0f * player.GetStat(Stats::curHP) / player.GetStat(Stats::maxHP), 1);
+	_guiObjects.find("mp bar")->second->SetScale(1.0f * player.GetStat(Stats::curMP) / player.GetStat(Stats::maxMP), 1);
+	_guiObjects.find("xp bar")->second->SetScale(1.0f * player.GetStat(Stats::curXP) / player.GetStat(Stats::xpNeeded), 1);
 }
 
 void GuiObjectManager::UpdateMonsterResources(sf::RenderWindow& renderWindow, Monster& monster)
 {
-	_guiObjects.find("monster HP bar")->second->SetScale(1.0f * monster.GetCurrentHP() / monster.GetMaxHP(), 1);
-	//_guiObjects.find("mp bar")->second->SetScale(1.0f * player.GetCurrentMP() / player.GetMaxMP(), 1);
+	_guiObjects.find("monster HP bar")->second->SetScale(1.0f * monster.GetStat(Stats::curHP) / monster.GetStat(Stats::maxHP), 1);
+	//_guiObjects.find("mp bar")->second->SetScale(1.0f * player.GetStat(Stats::curMP) / player.GetStat(Stats::maxMP), 1);
 }
 
 void GuiObjectManager::DrawHUD(sf::RenderWindow& renderWindow, sf::Event currentEvent, Player& player, sf::Vector2f HUDpos, bool selected)
@@ -306,7 +304,7 @@ void GuiObjectManager::DrawHUD(sf::RenderWindow& renderWindow, sf::Event current
 	//_guiObjects.find("text box")->second->Draw(renderWindow);
 
 	std::stringstream ss;
-	ss << player.GetCurrentHP() << "/" << player.GetMaxHP();
+	ss << player.GetStat(Stats::curHP) << "/" << player.GetStat(Stats::maxHP);
 	sf::Text text(ss.str(), Game::font);
 	text.setCharacterSize(10);
 	text.setColor(sf::Color::Black);
@@ -315,13 +313,13 @@ void GuiObjectManager::DrawHUD(sf::RenderWindow& renderWindow, sf::Event current
 	Game::GetWindow().draw(text);
 
 	ss.str(std::string());
-	ss << player.GetCurrentMP() << "/" << player.GetMaxMP();
+	ss << player.GetStat(Stats::curMP) << "/" << player.GetStat(Stats::maxMP);
 	text.setString(ss.str());
 	text.setPosition(_guiObjects.find("mp bar")->second->GetPosition().x + _guiObjects.find("mp bar")->second->GetWidth() / 2, _guiObjects.find("mp bar")->second->GetPosition().y + 2);
 	Game::GetWindow().draw(text);
 
 	ss.str(std::string());
-	ss << player.GetCurrentXP() << "/" << player.GetXPNeeded();
+	ss << player.GetStat(Stats::curXP) << "/" << player.GetStat(Stats::xpNeeded);
 	text.setString(ss.str());
 	text.setPosition(_guiObjects.find("xp bar")->second->GetPosition().x + _guiObjects.find("xp bar")->second->GetWidth() / 2, _guiObjects.find("xp bar")->second->GetPosition().y + 2);
 	Game::GetWindow().draw(text);
@@ -371,30 +369,30 @@ void GuiObjectManager::DrawStatMenu(sf::RenderWindow& renderWindow, sf::Event& c
 		}
 
 		std::stringstream ss;
-		ss << player.GetName() << "\tLevel: " << player.GetStat(ePlayerStats::level)
-			<< "\n\nStrength:   \t\t\t\t\t\t\t\t\t" << player.GetStat(ePlayerStats::str)
-			<< "\n\nDexterity:   \t\t\t\t\t\t\t\t\t" << player.GetStat(ePlayerStats::dex)
-			<< "\n\nInteligence:   \t\t\t\t\t\t\t\t" << player.GetStat(ePlayerStats::intel)
-			<< "\n\nWisdom:\t\t\t\t\t\t\t\t\t\t" << player.GetStat(ePlayerStats::wis)
-			<< "\n\nVitality: \t\t\t\t\t\t\t\t\t\t" << player.GetStat(ePlayerStats::stam)
-			<< "\n\n\n\n\nStat Points:\t\t\t\t\t\t\t\t\t" << player.GetStat(ePlayerStats::statPts);
+		ss << player.GetName() << "\tLevel: " << player.GetStat(Stats::level)
+			<< "\n\nStrength:   \t\t\t\t\t\t\t\t\t" << player.GetStat(Stats::str)
+			<< "\n\nDexterity:   \t\t\t\t\t\t\t\t\t" << player.GetStat(Stats::dex)
+			<< "\n\nInteligence:   \t\t\t\t\t\t\t\t" << player.GetStat(Stats::intel)
+			<< "\n\nWisdom:\t\t\t\t\t\t\t\t\t\t" << player.GetStat(Stats::wis)
+			<< "\n\nVitality: \t\t\t\t\t\t\t\t\t\t" << player.GetStat(Stats::stam)
+			<< "\n\n\n\n\nStat Points:\t\t\t\t\t\t\t\t\t" << player.GetStat(Stats::statPts);
 		sf::Text text(ss.str(), Game::font);
 		text.setCharacterSize(10);
 		text.setOrigin(text.getLocalBounds().width / 2, text.getLocalBounds().height / 2);
 		text.setPosition(this->Get("stat menu")->GetPosition().x + text.getLocalBounds().width / 2 + 15, this->Get("stat menu")->GetPosition().y + 110);
 
-		Game::GetGuiObjectManager().Get("stat menu")->Draw(renderWindow);
+		Get("stat menu")->Draw(renderWindow);
 		renderWindow.draw(text);
 
-		if (player.GetStat(ePlayerStats::statPts) > 0)
+		if (player.GetStat(Stats::statPts) > 0)
 		{
 			int pos_x = this->Get("stat menu")->GetPosition().x + 150;
 			int pos_y = this->Get("stat menu")->GetPosition().y + 40;
-			DrawStatButton(renderWindow, currentEvent, player, pos_x, pos_y, ePlayerStats::str);
-			DrawStatButton(renderWindow, currentEvent, player, pos_x, pos_y + 25, ePlayerStats::dex);
-			DrawStatButton(renderWindow, currentEvent, player, pos_x, pos_y + 50, ePlayerStats::intel);
-			DrawStatButton(renderWindow, currentEvent, player, pos_x, pos_y + 75, ePlayerStats::wis);
-			DrawStatButton(renderWindow, currentEvent, player, pos_x, pos_y + 100, ePlayerStats::stam);
+			DrawStatButton(renderWindow, currentEvent, player, pos_x, pos_y, Stats::str);
+			DrawStatButton(renderWindow, currentEvent, player, pos_x, pos_y + 25, Stats::dex);
+			DrawStatButton(renderWindow, currentEvent, player, pos_x, pos_y + 50, Stats::intel);
+			DrawStatButton(renderWindow, currentEvent, player, pos_x, pos_y + 75, Stats::wis);
+			DrawStatButton(renderWindow, currentEvent, player, pos_x, pos_y + 100, Stats::stam);
 		}
 		//renderWindow.draw(testShape);
 	}
@@ -476,7 +474,7 @@ void GuiObjectManager::DrawMonsterHUD(sf::RenderWindow& renderWindow, Monster& m
 	//_guiObjects.find("monster XP bar")->second->Draw(renderWindow);
 
 	std::stringstream ss;
-	ss << monster.GetCurrentHP() << "/" << monster.GetMaxHP();
+	ss << monster.GetStat(Stats::curHP) << "/" << monster.GetStat(Stats::maxHP);
 	sf::Text text(ss.str(), Game::font);
 	text.setCharacterSize(10);
 	text.setColor(sf::Color::Black);

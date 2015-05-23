@@ -3,6 +3,7 @@
 
 #include "GameObjectManager.h"
 #include "Equipment.hpp"
+#include "InputHandler.hpp"
 #include "Monster.h"
 #include "Player.h"
 #include "GuiObjectManager.h"
@@ -17,6 +18,10 @@ extern "C" {
 }
 #include <LuaBridge.h>
 
+class GuiObjectManager;
+class Battle;
+class InputHandler;
+
 
 class Game
 {
@@ -27,6 +32,7 @@ public:
 	static GameObjectManager& GetGameObjectManager();
 	static GuiObjectManager& GetGuiObjectManager();
 	static AnimationManager& GetAnimationManager();
+	static InputHandler& GetInputHandler();
 
 	static void startBattle(Battle* fight);
 	static Battle* battle;
@@ -69,6 +75,7 @@ private:
 	static GameObjectManager _gameObjectManager;
 	static GuiObjectManager _guiObjectManager;
 	static AnimationManager _animationManager;
+	static InputHandler _inputHandler;
 };
 
 #endif

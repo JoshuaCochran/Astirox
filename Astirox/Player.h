@@ -1,9 +1,11 @@
 #ifndef _PLAYER_H
 #define _PLAYER_H
 
-#include "VisibleGameObject.h"
-#include "Monster.h"
+#include "Entity.h"
+#include "ServiceLocator.h"
 #include "Equipment.hpp"
+#include "Monster.h"
+#include "Battle.h"
 #include "Map.hpp"
 
 extern "C" {
@@ -16,16 +18,7 @@ extern "C" {
 using namespace luabridge;
 
 class Map;
-
-
-namespace ePlayerStats
-{
-	enum ePlayerStats
-	{
-		str, dex, intel, wis, stam, maxHP, curHP, maxMP, curMP, defense, res, pATT, rATT, mATT,
-		ACC, avoid, CC, CHD, level, statPts, curXP, xpNeeded, gold, wdmg, enchant, speed
-	};
-}
+class Equipment;
 
 namespace statModifiers
 {
@@ -37,45 +30,19 @@ namespace baseStats
 	enum baseStats { str, dex, intel, wis, stam, wdmg };
 }
 
-class Equipment;
-
-class Player :
-	public VisibleGameObject
+class Player : public Entity
 {
 public:
 	Player();
 	~Player();
 
-	void Update(float elapsedTime);
-	void Draw(sf::RenderWindow& rw);
+	void Update(Map& map, sf::Event currentEvent);
 	void DrawStats(sf::RenderWindow& renderWindow);
-	bool moveto(Map& map, sf::Event currentEvent);
-	bool checkCollision(Map& map, float x, float y);
 
 	void ReloadScripts();
 
-	float GetVelocity() const;
-
-	std::string GetName() const;
-
-	int GetCurrentHP() const;
-	int GetMaxHP() const;
-
-	int GetCurrentMP() const;
-	int GetMaxMP() const;
-
-	int GetDefense() const;
-
-	int GetCurrentXP() const;
-	int GetXPNeeded() const;
-	int GetLevel() const;
-
-	int GetPhysAttDmg() const;
-
-	void AddHP(int hp);
-
 	void GainXP(int num);
-	void LevelUp();
+	virtual void LevelUp();
 	void UpdateStats();
 	void AddStat(int stat, int num);
 	int GetStat(int stat) const;
@@ -93,36 +60,28 @@ public:
 	void EquipItem(Equipment& toBeEquipped);
 	void UnequipItem(int pos);
 
-	std::vector<std::function<std::string(Player&, Monster&)>>& GetSpellInventory();
+	std::vector<std::function<std::string(Entity&, Entity&)>>& GetSpellInventory();
 
 private:
-	float _velocity; //-- left ++ right
-	float _maxVelocity;
 	bool move(int x, int y);
 
-	lua_State* player_lua_state;
 	void CalculateStats();
 
-	int stats[25];
 	int baseStats[6];
 	int gearStats[10];
 	int bonusStats[18];
 	double statModifiers[14];
 
-	std::string name;
-
 	std::vector<Equipment*> playerInventory;
 	std::vector<Equipment*> playerEquipment;
-	Equipment* playerWeapon;
-	Equipment* playerShield;
-	Equipment* playerArmor;
-	Equipment* playerHelmet;
-	Equipment* playerAccessory;
 
-	std::vector<std::function<std::string(Player&, Monster&)>> spellInventory;
+	std::vector<std::function<std::string(Entity&, Entity&)>> spellInventory;
 
 	bool can_wear_mail;
 	bool can_wear_plate;
+
+	virtual void update_map_pos(sf::Vector2f previous, sf::Vector2f target);
+	virtual bool collision(Map& map, sf::Vector2f point);
 };
 
 #endif

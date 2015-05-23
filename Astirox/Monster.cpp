@@ -5,16 +5,15 @@
 #include "Game.h"
 
 
-Monster::Monster() :
-_velocity(0), _maxVelocity(600.0f)
+Monster::Monster()
 {
-	monster_lua_state = luaL_newstate();
-	luaL_dofile(monster_lua_state, "data/scripts/monsters/test_monster.lua");
-	luaL_openlibs(monster_lua_state);
-	lua_pcall(monster_lua_state, 0, 0, 0);
+	lua_state = luaL_newstate();
+	luaL_dofile(lua_state, "data/scripts/monsters/test_monster.lua");
+	luaL_openlibs(lua_state);
+	lua_pcall(lua_state, 0, 0, 0);
 
-	LuaRef spriteTable = getGlobal(monster_lua_state, "t_monster")["sprite"];
-	LuaRef baseStatsTable = getGlobal(monster_lua_state, "t_monster")["baseStats"];
+	LuaRef spriteTable = getGlobal(lua_state, "t_monster")["sprite"];
+	LuaRef baseStatsTable = getGlobal(lua_state, "t_monster")["baseStats"];
 
 	if (spriteTable["spriteLeftPos"].isNil())
 	{
@@ -50,8 +49,7 @@ _velocity(0), _maxVelocity(600.0f)
 	mainBoss = baseStatsTable["mainboss"].cast<bool>();*/
 }
 
-Monster::Monster(std::string filename) :
-_velocity(0), _maxVelocity(600.0f)
+Monster::Monster(std::string filename)
 {
 	pugi::xml_document doc;
 	pugi::xml_parse_result monster_file = doc.load_file("data/scripts/monsters/monsters.xml");
@@ -88,19 +86,19 @@ _velocity(0), _maxVelocity(600.0f)
 
 			GetSprite().setOrigin(GetSprite().getLocalBounds().width / 2, GetSprite().getLocalBounds().height / 2);
 
-			stats[eMonsterStats::maxHP] = atoi(it->child("Stats").child_value("HP"));
-			stats[eMonsterStats::curHP] = stats[eMonsterStats::maxHP];
-			stats[eMonsterStats::maxMP] = atoi(it->child("Stats").child_value("MP"));
-			stats[eMonsterStats::curMP] = stats[eMonsterStats::maxMP];
+			stats[Stats::maxHP] = atoi(it->child("Stats").child_value("HP"));
+			stats[Stats::curHP] = stats[Stats::maxHP];
+			stats[Stats::maxMP] = atoi(it->child("Stats").child_value("MP"));
+			stats[Stats::curMP] = stats[Stats::maxMP];
 
-			stats[eMonsterStats::pATT] = atoi(it->child("Stats").child_value("BasePhysicalDamage"));
-			stats[eMonsterStats::mATT] = atoi(it->child("Stats").child_value("BaseMagicDamage"));
-			stats[eMonsterStats::ACC] = atoi(it->child("Stats").child_value("Accuracy"));
-			stats[eMonsterStats::avoid] = atoi(it->child("Stats").child_value("Evasion"));
-			stats[eMonsterStats::CC] = atoi(it->child("Stats").child_value("CriticalHitChance"));
-			stats[eMonsterStats::CHD] = atoi(it->child("Stats").child_value("CriticalHitDamage"));
-			stats[eMonsterStats::defense] = atoi(it->child("Stats").child_value("Defense"));
-			stats[eMonsterStats::speed] = atoi(it->child("Stats").child_value("Speed"));
+			stats[Stats::pATT] = atoi(it->child("Stats").child_value("BasePhysicalDamage"));
+			stats[Stats::mATT] = atoi(it->child("Stats").child_value("BaseMagicDamage"));
+			stats[Stats::ACC] = atoi(it->child("Stats").child_value("Accuracy"));
+			stats[Stats::avoid] = atoi(it->child("Stats").child_value("Evasion"));
+			stats[Stats::CC] = atoi(it->child("Stats").child_value("CriticalHitChance"));
+			stats[Stats::CHD] = atoi(it->child("Stats").child_value("CriticalHitDamage"));
+			stats[Stats::defense] = atoi(it->child("Stats").child_value("Defense"));
+			stats[Stats::speed] = atoi(it->child("Stats").child_value("Speed"));
 
 			elementalresistances[eElementalResistances::Physical] = atoi(it->child("ElementalResistances").child_value("Physical"));
 			elementalresistances[eElementalResistances::Fire] = atoi(it->child("ElementalResistances").child_value("Fire"));
@@ -122,10 +120,10 @@ _velocity(0), _maxVelocity(600.0f)
 			ailmentresistances[eAilmentResistances::Frozen] = atoi(it->child("AilmentResistances").child_value("Frozen"));
 			ailmentresistances[eAilmentResistances::Stun] = atoi(it->child("AilmentResistances").child_value("Stun"));
 
-			stats[eMonsterStats::baseXP] = atoi(it->child_value("BaseXP"));
-			stats[eMonsterStats::baseGold] = atoi(it->child_value("BaseGold"));
-			stats[eMonsterStats::boss] = atoi(it->child_value("Boss"));
-			stats[eMonsterStats::miniboss] = atoi(it->child_value("Miniboss"));
+			stats[Stats::baseXP] = atoi(it->child_value("BaseXP"));
+			stats[Stats::baseGold] = atoi(it->child_value("BaseGold"));
+			stats[Stats::boss] = atoi(it->child_value("Boss"));
+			stats[Stats::miniboss] = atoi(it->child_value("Miniboss"));
 
 			sizeInParty = atoi(it->child_value("SizeInParty"));
 
@@ -133,15 +131,16 @@ _velocity(0), _maxVelocity(600.0f)
 		}
 	}
 
+	friendly = true;
 
-	/*monster_lua_state = luaL_newstate();
-	if (luaL_dofile(monster_lua_state, ("data/scripts/monsters/" + filename).c_str()) != 0)
+	/*lua_state = luaL_newstate();
+	if (luaL_dofile(lua_state, ("data/scripts/monsters/" + filename).c_str()) != 0)
 		std::cout << "Failed to load filename\n\n";
-	luaL_openlibs(monster_lua_state);
-	lua_pcall(monster_lua_state, 0, 0, 0);
+	luaL_openlibs(lua_state);
+	lua_pcall(lua_state, 0, 0, 0);
 
-	LuaRef spriteTable = getGlobal(monster_lua_state, "t_monster")["sprite"];
-	LuaRef baseStatsTable = getGlobal(monster_lua_state, "t_monster")["baseStats"];
+	LuaRef spriteTable = getGlobal(lua_state, "t_monster")["sprite"];
+	LuaRef baseStatsTable = getGlobal(lua_state, "t_monster")["baseStats"];
 
 	if (spriteTable["spriteLeftPos"].isNil())
 	{
@@ -180,12 +179,6 @@ _velocity(0), _maxVelocity(600.0f)
 Monster::~Monster()
 {
 }
-
-void Monster::Draw(sf::RenderWindow& rw)
-{
-	VisibleGameObject::Draw(rw);
-}
-
 bool Monster::checkCollision(Map& map, float x, float y)
 {
 	if (this == nullptr) return true;
@@ -210,9 +203,9 @@ bool Monster::checkCollision(Map& map, float x, float y)
 					{
 						if (map.GetSpawnedMonsters()[i][j] == this)
 						{
-							Battle* combat = new Battle(Game::playerParty, map.GetSpawnedMonsters()[i], true);
-							combat->SetTurn(1);
-							Game::startBattle(combat);
+							//Battle* combat = new Battle(Game::playerParty, map.GetSpawnedMonsters()[i], true);
+							//combat->SetTurn(1);
+							//Game::startBattle(combat);
 							return true;
 						}
 					}
@@ -300,96 +293,8 @@ void Monster::Update(Map& map)
 
 void Monster::Move()
 {
-
 }
-
-int Monster::GetCurrentHP()
-{
-	return stats[eMonsterStats::curHP];
-}
-
-int Monster::GetMaxHP()
-{
-	return stats[eMonsterStats::maxHP];
-}
-
-int Monster::GetCurrentMP()
-{
-	return stats[eMonsterStats::curMP];
-}
-
-int Monster::GetMaxMP()
-{
-	return stats[eMonsterStats::maxMP];
-}
-
-int Monster::GetXPReward()
-{
-	return stats[eMonsterStats::baseXP];
-}
-
-int Monster::GetGoldReward()
-{
-	return stats[eMonsterStats::baseGold];
-}
-
-int Monster::GetLevel()
-{
-	return stats[eMonsterStats::level];
-}
-
-int Monster::GetMinDmg()
-{
-	return (int)stats[eMonsterStats::pATT] * 0.6;
-}
-
-int Monster::GetMaxDmg()
-{
-	return stats[eMonsterStats::pATT];
-}
-
-int Monster::GetDefense()
-{
-	return stats[eMonsterStats::defense];
-}
-
-std::string Monster::GetName()
-{
-	return name;
-}
-
-bool Monster::IsMiniBoss()
-{
-	return miniBoss;
-}
-
-bool Monster::IsMainBoss()
-{
-	return mainBoss;
-}
-
-void Att(Player player);
-void MagicAtt();
-
-void Monster::AddHP(int hp)
-{
-	stats[eMonsterStats::curHP] += hp;
-	if (stats[eMonsterStats::curHP] <= 0)
-		GetSprite().rotate(-90.0f);
-	else GetSprite().setRotation(0);
-}
-
 int Monster::GetSizeInParty() const
 {
 	return sizeInParty;
 }
-
-int Monster::GetStat(int stat) const
-{
-	if ((sizeof(stats) / sizeof(stats[0])) >= stat)
-		return stats[stat];
-	else
-		return 0;
-}
-
-void SpawnMonster(Player player);

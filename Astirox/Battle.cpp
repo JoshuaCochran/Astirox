@@ -6,11 +6,6 @@
 
 Battle::Battle(std::vector<Player*>& playerParty, std::vector<Monster*>& monsterParty, bool ambush)
 {
-	//m_monster = &monster1;
-	if (ambush)
-		SetActiveEntity(*monsterParty[0], false);
-	else
-		SetActiveEntity(*playerParty[0], true);
 	monsterPos = monsterParty[0]->GetPosition();
 	m_monsterParty = monsterParty;
 	for (int i = 0; i < monsterParty.size(); i++)
@@ -27,32 +22,16 @@ Battle::Battle(std::vector<Player*>& playerParty, std::vector<Monster*>& monster
 			Game::SCREEN_HEIGHT / 2 + 96 - (48 * i));
 		m_playerParty[i]->SetScale(3, 3);
 	}
-	for (int i = 0; i < Game::playerParty.size(); i++)
-	{
-		Entity temp;
-		temp.entity = Game::playerParty[i];
-		temp.friendly = true;
-		m_entityList.push_back(temp);
-	}
-	for (int i = 0; i < monsterParty.size(); i++)
-	{
-		Entity temp;
-		temp.entity = monsterParty[i];
-		temp.friendly = false;
-		m_entityList.push_back(temp);
-	}
 
 	damageText.setString("");
 	damageText.setFont(Game::font);
 	damageText.setCharacterSize(22);
+
+	Game::startBattle(this);
 }
 
 void Battle::calculateTurnOrder()
 {
-	/*for (int i = 0; i < m_entityList.size(); i++)
-	{
-		m_entityList[i].entity->GetStat()
-	}*/
 }
 
 Entity& Battle::GetTarget()
@@ -69,26 +48,20 @@ std::vector<Monster*>& Battle::GetMonsterParty()
 	return m_monsterParty;
 }
 
-void Battle::SetTarget(VisibleGameObject& target, bool friendly)
+void Battle::SetTarget(Entity* target, bool friendly)
 {
-	m_target.entity = &target;
-	m_target.friendly = friendly;
 }
 
 void Battle::ClearTarget()
 {
-	m_target.entity = NULL;
 }
 
 void Battle::ClearActiveEntity()
 {
-	m_activeEntity.entity = NULL;
 }
 
-void Battle::SetActiveEntity(VisibleGameObject& target, bool friendly)
+void Battle::SetActiveEntity(Entity* target, bool friendly)
 {
-	m_activeEntity.entity = &target;
-	m_activeEntity.friendly = friendly;
 }
 
 sf::Vector2f Battle::GetPlayerPos()
@@ -141,203 +114,10 @@ void Battle::SetPlayerAtt(bool input)
 	playerAtt = input;
 }
 
-/*bool fight(sf::RenderWindow& renderWindow, Player& player, Monster& monster /*,Inventory& invent)
+std::string BasicPhysAttack(Entity& actor, Entity& target)
 {
-	/*sf::Texture icon;
-	icon.loadFromFile("data/rogue.png");
-	sf::Sprite iconTest(icon);
-
-	sf::Texture borderImage;
-	borderImage.loadFromFile("data/border.png");
-	sf::Sprite border1(borderImage);
-	sf::Sprite border2(borderImage);
-
-	iconTest.setScale(0.25, 0.25);
-	iconTest.setPosition(2, Game::SCREEN_HEIGHT - 130);
-	border1.setPosition(0, Game::SCREEN_HEIGHT - 136);
-	border2.setPosition(136, Game::SCREEN_HEIGHT - 136);
-
-	float playerPosX = player.GetPosition().x;
-	float playerPosY = player.GetPosition().y;
-
-	float monsterPosX = monster.GetPosition().x;
-	float monsterPosY = monster.GetPosition().y;
-
-	///Monster monster1("data/images/monster/archon0.png");
-	player.SetPosition(Game::SCREEN_WIDTH / 2 + 100, Game::SCREEN_HEIGHT / 2);
-	//monster1.SetPosition(Game::SCREEN_WIDTH / 2 - 100, Game::SCREEN_HEIGHT / 2);
-	player.SetScale(3, 3);
-
-	/*sf::Texture image;
-	image.loadFromFile("data/images/map backgrounds/gold_shifter_dunes.png");
-	sf::Sprite background(image);
-	background.setScale(1.5f, 1.5f);*/
-
-	/*sf::Texture spellAnimation;
-	if (!spellAnimation.loadFromFile("data/firelion_left.png"))
-	{
-		std::cout << "Failed to load spell spritesheet!" << std::endl;
-	}*/
-
-	/*Animation fireAnimation;
-	fireAnimation.setSpriteSheet(spellAnimation);
-	fireAnimation.addFrame(sf::IntRect(0, 0, 128, 128));
-	fireAnimation.addFrame(sf::IntRect(128, 0, 128, 128));
-	fireAnimation.addFrame(sf::IntRect(256, 0, 128, 128));
-	fireAnimation.addFrame(sf::IntRect(384, 0, 128, 128));
-	fireAnimation.addFrame(sf::IntRect(0, 128, 128, 128));
-	fireAnimation.addFrame(sf::IntRect(128, 128, 128, 128));
-	fireAnimation.addFrame(sf::IntRect(256, 128, 128, 128));
-	fireAnimation.addFrame(sf::IntRect(384, 128, 128, 128));
-	fireAnimation.addFrame(sf::IntRect(0, 256, 128, 128));
-	fireAnimation.addFrame(sf::IntRect(128, 256, 128, 128));
-	fireAnimation.addFrame(sf::IntRect(256, 256, 128, 128));
-	fireAnimation.addFrame(sf::IntRect(384, 256, 128, 128));
-	fireAnimation.addFrame(sf::IntRect(0, 384, 128, 128));
-	fireAnimation.addFrame(sf::IntRect(128, 384, 128, 128));
-	fireAnimation.addFrame(sf::IntRect(256, 384, 128, 128));
-	fireAnimation.addFrame(sf::IntRect(384, 384, 128, 128));
-
-	Animation* currentAnimation = Game::GetAnimationManager().GetAnimation("fire lion left");
-
-	AnimatedSprite animatedSprite(sf::seconds(1), true, false);
-	animatedSprite.setPosition(Game::SCREEN_WIDTH / 2 + 84, Game::SCREEN_HEIGHT / 2 - 64);
-
-	/*sf::Texture monsterTexture;
-	monsterTexture.loadFromFile("data/images/monster/archon.png");
-	
-	sf::Sprite monsterCooler(monsterTexture);
-	sf::Color monsterColor = monsterCooler.getColor();
-
-	Animation monsterAnimation;
-	monsterAnimation.setSpriteSheet(monsterTexture);
-	monsterAnimation.addFrame(sf::IntRect(0, 0, 144, 144));
-	monsterAnimation.addFrame(sf::IntRect(144, 0, 144, 144));
-	monsterAnimation.addFrame(sf::IntRect(288, 0, 144, 144));
-	monsterAnimation.addFrame(sf::IntRect(144, 0, 144, 144));
-	monsterAnimation.addFrame(sf::IntRect(0, 0, 144, 144));
-
-	AnimatedSprite monsterSprite(sf::seconds(0.03), false, false);
-	monsterSprite.setPosition(Game::SCREEN_WIDTH / 2 - 216, Game::SCREEN_HEIGHT / 2 - 72);
-
-	monsterSprite.play(*Game::GetAnimationManager().GetAnimation("monster"));
-	//renderWindow.draw(background);
-	player.Draw(renderWindow);
-	renderWindow.draw(monsterSprite);
-	//renderWindow.draw(iconTest);
-
-	sf::Clock textFadeClock;
-	sf::Clock turnTimer;
-	sf::Clock frameClock;
-	sf::Clock monsterFrameClock;
-
-	sf::Event currentEvent;
-	renderWindow.pollEvent(currentEvent);
-	int turn = 0;
-	bool playerAtt = false;
-	/*sf::Text damageText("", Game::font);
-	damageText.setCharacterSize(22);
-	while (monster.GetCurrentHP() > 0 && player.GetCurrentHP() > 0)
-	{
-		monsterFrameClock.restart();
-		/*  if (!mon_stunned)
-			{
-				monAtt(x, mon);
-			}
-			else if (mon_stunned)
-			{
-				cout << mon.getName() << " was stunned and it couldn't move!\n";
-				mon_stunned = false;
-			}
-		
-
-		// Player turn
-		if (border1.getGlobalBounds().contains(sf::Mouse::getPosition(renderWindow).x, sf::Mouse::getPosition(renderWindow).y))
-		{
-			if (renderWindow.pollEvent(currentEvent) && currentEvent.type == sf::Event::MouseButtonReleased && turn == 0)
-			{
-					damageText.setString(BasicPhysAttack(player, monster));
-					damageText.setPosition(monsterSprite.getPosition().x + 64, monsterSprite.getPosition().y - 64);
-					animatedSprite.setPosition(player.GetPosition().x - 128, player.GetPosition().y - 64);
-					textFadeClock.restart();
-					turnTimer.restart();
-					frameClock.restart();
-					turn = 1;
-					playerAtt = true;
-			}
-		}
-		
-		// Enemy turn
-		if (turn == 1 && turnTimer.getElapsedTime().asSeconds() > 1)
-		{
-			damageText.setString(MonsterAttack(player, monster));
-			damageText.setPosition(player.GetPosition().x, player.GetPosition().y - 32);
-			textFadeClock.restart();
-			turn = 0;
-			playerAtt = false;
-			animatedSprite.stop();
-		}
-		
-		// Fade Damage Text
-		if (textFadeClock.getElapsedTime().asSeconds() < 1)
-		{
-			damageText.setColor(sf::Color(255, 255, 255, 255 - 255 * textFadeClock.getElapsedTime().asSeconds()));
-			damageText.setPosition(damageText.getPosition().x, damageText.getPosition().y - 0.25f);
-		}
-
-
-		//renderWindow.draw(background);
-		player.Draw(renderWindow);
-		//monster1.Draw(renderWindow);
-		Game::GetGuiObjectManager().DrawHUD(renderWindow, currentEvent, player);
-		Game::GetGuiObjectManager().DrawMonsterHUD(renderWindow, monster);
-		Game::GetGameObjectManager().Get("cursor")->SetPosition(static_cast<sf::Vector2f>(sf::Mouse::getPosition(renderWindow)));
-
-		if (frameClock.getElapsedTime().asSeconds() < 1 && playerAtt)
-		{
-			animatedSprite.play(*currentAnimation);
-			animatedSprite.move(sf::Vector2f(-3.0f, 0.0f));
-			animatedSprite.update(frameClock.getElapsedTime());
-			renderWindow.draw(animatedSprite);
-			monsterSprite.setColor(sf::Color(monsterColor.r, monsterColor.g, monsterColor.b, 255 * (frameClock.getElapsedTime().asMilliseconds() % 2)));
-		}
-		else monsterSprite.setColor(sf::Color(monsterColor.r, monsterColor.g, monsterColor.b, 255));
-
-		//renderWindow.draw(iconTest);
-		//renderWindow.draw(border1);
-		//renderWindow.draw(border2);
-		monsterSprite.play(monsterAnimation);
-		monsterSprite.update(monsterFrameClock.getElapsedTime());
-		renderWindow.draw(monsterSprite);
-		renderWindow.draw(damageText);
-		Game::GetGameObjectManager().Get("cursor")->Draw(renderWindow);
-		renderWindow.display();
-	}
-
-	if (player.GetCurrentHP() <= 0)
-	{
-		player.AddHP(player.GetMaxHP());
-		monster.AddHP(monster.GetMaxHP());
-		monster.SetPosition(monsterPosX, monsterPosY);
-	}
-	if (monster.GetCurrentHP() <= 0)
-	{
-		player.GainXP(monster.GetXPReward());
-
-		Equipment* itemDrop = new Equipment(monster);
-		Game::equipmentOnFloor.push_back(itemDrop);
-		//checkDrop();
-	}
-	player.SetPosition(playerPosX, playerPosY);
-	player.SetScale(1, 1);
-
-	return true;
-}*/
-
-std::string BasicPhysAttack(Player& player, Monster& monster)
-{
-	int minDmg = (int)(player.GetPhysAttDmg() * .6);
-	int damage = (rand() % (player.GetPhysAttDmg() - minDmg)) + minDmg;
+	int minDmg = (int)(actor.GetStat(Stats::pATT) * .6);
+	int damage = (rand() % (actor.GetStat(Stats::pATT) - minDmg)) + minDmg;
 
 	/*
 	If player has burning enchantment roll to see if monster is inflicted with burning.
@@ -348,10 +128,10 @@ std::string BasicPhysAttack(Player& player, Monster& monster)
 		if ((rand() % 100) < 33 * x.getRandMod()) monster.SetBurn(true);
 	}*/
 
-	return PlayerAttackResolve(player, monster, damage);
+	return PlayerAttackResolve(actor, target, damage);
 }
 
-std::string PlayerAttackResolve(Player& player, Monster& monster, int damage)
+std::string PlayerAttackResolve(Entity& player, Entity& monster, int damage)
 {
 	std::stringstream ss;
 	int burnDamage = 0;
@@ -361,13 +141,13 @@ std::string PlayerAttackResolve(Player& player, Monster& monster, int damage)
 		damage *= player.getBurnedMonMod();
 	}*/
 
-	int damage_mitigation = (monster.GetDefense() / (monster.GetDefense() + player.GetLevel() * 50));
+	int damage_mitigation = (monster.GetStat(Stats::defense) / (monster.GetStat(Stats::defense) + player.GetStat(Stats::level) * 50));
 	//Hard cap of damage mitigation is 80%.
 	if (damage_mitigation > .8) damage_mitigation = .8;
 	damage *= 1 - damage_mitigation;
 	monster.AddHP((damage + burnDamage) * -1);
 
-	if (monster.GetCurrentHP() > 0)
+	if (monster.GetStat(Stats::curHP) > 0)
 	{
 		ss << damage;
 		return ss.str();
@@ -393,14 +173,14 @@ std::string PlayerAttackResolve(Player& player, Monster& monster, int damage)
 
 std::string MonsterAttack(Player& player, Monster & monster)
 {
-	int damage = (rand() % (monster.GetMaxDmg() - monster.GetMinDmg())) + monster.GetMinDmg();
+	int damage = 0;//(rand() % (monster.GetMaxDmg() - monster.GetMinDmg())) + monster.GetMinDmg();
 
 	return MonsterAttackResolve(player, monster, damage);
 }
 
 std::string MonsterAttackResolve(Player& player, Monster & monster, int damage)
 {
-	int damage_mitigation = (player.GetDefense() / (player.GetDefense() + (monster.GetLevel() * 50)));
+	int damage_mitigation = 0;//(player.GetDefense() / (player.GetDefense() + (monster.GetLevel() * 50)));
 	//Hard cap of damage mitigation is 80%.
 	if (damage_mitigation > .8) damage_mitigation = .8;
 	damage *= 1 - damage_mitigation;

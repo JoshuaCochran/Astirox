@@ -18,7 +18,7 @@ Equipment::Equipment(Monster& monster)
 		mStats[i] = 0;
 	}
 
-	mValue = monster.GetLevel() * 10 * mIRarity;
+	mValue = monster.GetStat(Stats::level) * 10 * mIRarity;
 	DetermineRarity(monster);
 	DetermineType(monster);
 	if (equipmentType == eEquipmentType::Helmet || equipmentType == eEquipmentType::Armor
@@ -54,11 +54,11 @@ void Equipment::DetermineRarity(Monster& monster)
 	double UNIQUE_DROP_CHANCE = 0;
 	int RARITY = 0;
 
-	if (monster.IsMiniBoss())
+	if (monster.GetStat(Stats::miniboss))
 	{
 		// Do stuff
 	}
-	else if (monster.IsMainBoss())
+	else if (monster.GetStat(Stats::boss))
 	{
 		// Do stuff
 	}
@@ -66,11 +66,11 @@ void Equipment::DetermineRarity(Monster& monster)
 	{
 		UNCOMMON_DROP_CHANCE = 0.30;
 
-		if (monster.GetLevel() > 10)
+		if (monster.GetStat(Stats::level) > 10)
 			RARE_DROP_CHANCE = 0.15;
-		if (monster.GetLevel() > 20)
+		if (monster.GetStat(Stats::level) > 20)
 			EPIC_DROP_CHANCE = 0.05;
-		if (monster.GetLevel() > 30)
+		if (monster.GetStat(Stats::level) > 30)
 			UNIQUE_DROP_CHANCE = 0.0001;
 
 		COMMON_DROP_CHANCE = 1 - (UNCOMMON_DROP_CHANCE
@@ -95,7 +95,7 @@ void Equipment::DetermineType(Monster& monster)
 	double HELMET_CHANCE = 0.25;
 	double ACCESSORY_CHANCE = 0.10;
 
-	if (monster.GetLevel() < 10)
+	if (monster.GetStat(Stats::level) < 10)
 	{
 		ARMOR_CHANCE += ACCESSORY_CHANCE;
 		ACCESSORY_CHANCE = 0;
@@ -123,17 +123,17 @@ void Equipment::RollArmorStats(Monster& monster)
 
 	if (equipmentType == eEquipmentType::Armor)
 	{
-		statValue1 = monster.GetLevel() / 5 * uniformRealDist(Game::rng);
-		statValue2 = monster.GetLevel() / 5 * uniformRealDist(Game::rng);
-		defenseValue = (int)(pow(monster.GetLevel(), 2) * uniformRealDist(Game::rng));
-		bonusDefenseValue = monster.GetLevel() * 3 * uniformRealDist(Game::rng);
+		statValue1 = monster.GetStat(Stats::level) / 5 * uniformRealDist(Game::rng);
+		statValue2 = monster.GetStat(Stats::level) / 5 * uniformRealDist(Game::rng);
+		defenseValue = (int)(pow(monster.GetStat(Stats::level), 2) * uniformRealDist(Game::rng));
+		bonusDefenseValue = monster.GetStat(Stats::level) * 3 * uniformRealDist(Game::rng);
 	}
 	else if (equipmentType == eEquipmentType::Helmet)
 	{
-		statValue1 = monster.GetLevel() / 8 * uniformRealDist(Game::rng);
-		statValue2 = monster.GetLevel() / 8 * uniformRealDist(Game::rng);
-		defenseValue = (int)(pow(monster.GetLevel(), 1.5) * uniformRealDist(Game::rng));
-		bonusDefenseValue = monster.GetLevel() * 2 * uniformRealDist(Game::rng);
+		statValue1 = monster.GetStat(Stats::level) / 8 * uniformRealDist(Game::rng);
+		statValue2 = monster.GetStat(Stats::level) / 8 * uniformRealDist(Game::rng);
+		defenseValue = (int)(pow(monster.GetStat(Stats::level), 1.5) * uniformRealDist(Game::rng));
+		bonusDefenseValue = monster.GetStat(Stats::level) * 2 * uniformRealDist(Game::rng);
 	}
 
 
@@ -340,7 +340,7 @@ void Equipment::RollWeaponStats(Monster& monster)
 	int imageSize = 16;
 	boost::random::uniform_int_distribution<> weaponImage(0, 5);
 
-	mStats[eEquipmentStats::Damage] = (int)(pow(2, monster.GetLevel()) * uniformRealDist(Game::rng));
+	mStats[eEquipmentStats::Damage] = (int)(pow(2, monster.GetStat(Stats::level)) * uniformRealDist(Game::rng));
 
 	mName = ("Weapon");
 	Load("data/images/items/LongWep.png", imageSize * weaponImage(Game::rng), 1, 16, 16);
@@ -355,8 +355,8 @@ void Equipment::RollAccessoryStats(Monster& monster)
 	int stat1 = uniformIntDist(Game::rng);
 	int stat2 = uniformIntDist(Game::rng);
 
-	int	statValue1 = monster.GetLevel() / 5 * uniformRealDist(Game::rng);
-	int statValue2 = monster.GetLevel() / 5 * uniformRealDist(Game::rng);
+	int	statValue1 = monster.GetStat(Stats::level) / 5 * uniformRealDist(Game::rng);
+	int statValue2 = monster.GetStat(Stats::level) / 5 * uniformRealDist(Game::rng);
 
 	mStats[stat1] += statValue1;
 	mStats[stat2] += statValue2;

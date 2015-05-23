@@ -89,11 +89,17 @@
     <ClInclude Include="Animation.hpp" />
     <ClInclude Include="AnimationManager.hpp" />
     <ClInclude Include="Battle.h" />
+    <ClInclude Include="Command.hpp">
+      <DeploymentContent>false</DeploymentContent>
+      <FileType>CppHeader</FileType>
+    </ClInclude>
+    <ClInclude Include="Entity.h" />
     <ClInclude Include="Equipment.hpp" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameObjectManager.h" />
     <ClInclude Include="GuiObjectManager.h" />
     <ClInclude Include="IAudioProvider.h" />
+    <ClInclude Include="InputHandler.hpp" />
     <ClInclude Include="Item.h" />
     <ClInclude Include="MainMenu.h" />
     <ClInclude Include="Map.hpp" />
@@ -114,11 +120,13 @@
     <ClCompile Include="Astirox.cpp" />
     <ClCompile Include="Battle.cpp" />
     <ClCompile Include="DebugShape.cpp" />
+    <ClCompile Include="Entity.cpp" />
     <ClCompile Include="Equipment.cpp" />
     <ClCompile Include="FileNav.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameObjectManager.cpp" />
     <ClCompile Include="GuiObjectManager.cpp" />
+    <ClCompile Include="InputHandler.cpp" />
     <ClCompile Include="Item.cpp" />
     <ClCompile Include="MainMenu.cpp" />
     <ClCompile Include="Map.cpp" />

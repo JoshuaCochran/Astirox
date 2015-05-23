@@ -15,14 +15,13 @@ public:
 	virtual void Load(sf::Texture& texture, sf::IntRect& textureCoords);
 	virtual void Draw(sf::RenderWindow & window);
 	virtual void Update(float elapsedTime);
-	virtual bool moveto(sf::Event currentEvent);
 
 	virtual void SetPosition(float x, float y);
 	virtual void SetPosition(sf::Vector2f position);
 	virtual sf::Vector2f GetPosition() const;
-	void SetScale(float x, float y);
-	void SetTransparency(int a);
-	void SetOrigin(float x, float y);
+	virtual void SetScale(float x, float y);
+	virtual void SetTransparency(int a);
+	virtual void SetOrigin(float x, float y);
 
 	virtual bool IsLoaded();
 
@@ -31,9 +30,6 @@ public:
 	virtual sf::Vector2f GetOrigin();
 
 	virtual sf::Rect<float> GetBoundingRect() const;
-
-	// Living Entity Functions
-	virtual int GetStat(int stat) const;
 
 	const static int MOVE_SPEED = 16;
 

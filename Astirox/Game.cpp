@@ -4,10 +4,6 @@
 #include "MainMenu.h"
 #include "ServiceLocator.h"
 #include "SFMLSoundProvider.h"
-#include "Player.h"
-#include "GuiObjectManager.h"
-#include "Monster.h"
-#include "Battle.h"
 
 void Game::Start(void)
 {
@@ -49,11 +45,20 @@ void Game::Start(void)
 
 	Player *player = new Player();
 	player->SetPosition(24, 24);
-	currentMap->do_fov(*currentMap, player->GetPosition().x, player->GetPosition().y, 96);
+	currentMap->do_fov(player->GetPosition().x, player->GetPosition().y, 96);
+	playerParty.push_back(player);
+	Player *player2 = new Player();
+	playerParty.push_back(player2);
+	Player *player3 = new Player();
+	player3->AddHP(-20);
+	playerParty.push_back(player3);
+	Player *player4 = new Player();
+	playerParty.push_back(player4);
 
+	_inputHandler.init();
 	_guiObjectManager.Init();
 
-	_gameObjectManager.Add("Player", player);
+	//_gameObjectManager.Add("Player", player);
 	_gameObjectManager.Add("cursor", cursor);
 
 	_animationManager.Init();
@@ -108,9 +113,9 @@ void Game::GameLoop()
 {
 	sf::Event currentEvent;
 	_mainWindow.pollEvent(currentEvent);
-	Player* player1 = dynamic_cast<Player*>(Game::GetGameObjectManager().Get("Player"));
+	Command* command = _inputHandler.handleInput(currentEvent);//_mainWindow);
+
 	_gameObjectManager.Get("cursor")->SetPosition(static_cast<sf::Vector2f>(sf::Mouse::getPosition(_mainWindow)));
-	float offset = 1;
 	frameTime.restart();
 	switch (_gameState)
 	{
@@ -126,34 +131,23 @@ void Game::GameLoop()
 
 		case Game::Playing:
 			_mainWindow.clear(sf::Color(sf::Color(0, 0, 0)));
-			if (currentEvent.type == sf::Event::KeyPressed && currentEvent.key.code == sf::Keyboard::Z)
-				player1->PickUpItem();
-
-			if (currentEvent.type == sf::Event::KeyPressed && currentEvent.key.code == sf::Keyboard::F5)
-				player1->ReloadScripts();
-
-			if (player1->moveto(*currentMap, currentEvent))
+			if (command)
 			{
-				if (_gameState == Fight)
-				{
-					_mainWindow.setView(_mainWindow.getDefaultView());
-					break;
-				}
-				currentMap->UpdateMonsters();
-				if (_gameState == Fight)
-				{
-					_mainWindow.setView(_mainWindow.getDefaultView());
-					break;
-				}
-				currentMap->CheckSpawn();
+				command->execute(*playerParty[0]);
 			}
-			Game::view.setCenter(player1->GetPosition().x, player1->GetPosition().y);
+
+			/*if (playerParty[0]->moveto(*currentMap, currentEvent))
+			{
+				currentMap->UpdateMonsters();
+				currentMap->CheckSpawn();
+			}*/
+			Game::view.setCenter(playerParty[0]->GetPosition().x, playerParty[0]->GetPosition().y);
 			_mainWindow.setView(view);
 			currentMap->DrawAll(_mainWindow);
-			_gameObjectManager.Get("Player")->Draw(_mainWindow);
+			playerParty[0]->Draw(_mainWindow);
 			
 			_mainWindow.setView(_mainWindow.getDefaultView());
-			_guiObjectManager.DrawOOCGUI(_mainWindow, currentEvent, *player1);
+			_guiObjectManager.DrawOOCGUI(_mainWindow, currentEvent, *playerParty[0]);
 			_gameObjectManager.Get("cursor")->Draw(_mainWindow);
 
 
@@ -164,89 +158,132 @@ void Game::GameLoop()
 			break;
 
 		case Game::Fight:
+			_mainWindow.setView(_mainWindow.getDefaultView());
 			// Player turn is handled within the combat GUI implementation
 			_guiObjectManager.DrawCombatGUI(_mainWindow, currentEvent, *battle);
 			
-			player1->Draw(_mainWindow);
-			battle->GetMonster()->Draw(_mainWindow);
+			for (int i = 0; i < playerParty.size(); i++)
+				playerParty[i]->Draw(_mainWindow);
+			for (int i = 0; i < battle->GetMonsterParty().size(); i++)
+				battle->GetMonsterParty()[i]->Draw(_mainWindow);
 			_gameObjectManager.Get("cursor")->Draw(_mainWindow);
 
+
 			// Enemy turn
-			if (battle->GetTurn() == 1 && battle->GetTurnTimer().getElapsedTime().asSeconds() > 1)
+			/*if (!battle->GetActiveEntity().friendly && battle->GetTurnTimer().getElapsedTime().asSeconds() > 1 && dynamic_cast<Monster*>(battle->GetActiveEntity().entity)->GetCurrentHP() > 0)
 			{
-				battle->GetDamageText().setString(MonsterAttack(*player1, *battle->GetMonster()));
-				battle->GetDamageText().setPosition(player1->GetPosition().x, player1->GetPosition().y - 32);
+				battle->GetDamageText().setString(MonsterAttack(*playerParty[0], *dynamic_cast<Monster*>(battle->GetActiveEntity().entity)));
+				battle->GetDamageText().setPosition(playerParty[0]->GetPosition().x, playerParty[0]->GetPosition().y - 32);
 				battle->GetTextFadeClock().restart();
 				battle->GetSpellFrameClock().restart();
-				battle->SetTurn(0);
-				battle->SetPlayerAtt(false);
+				battle->SetActiveEntity(*Game::playerParty[0], true);
 				_animationManager.GetSpellSprite()->stop();
-			}
+			}*/
 
-			//Fade Damage Text
+			/*if (battle->GetTarget().entity != NULL)
+			{
+				// For one second after monster attack cause player to flash indicating hit.
+				if (battle->GetSpellFrameClock().getElapsedTime().asSeconds() < 1 && battle->GetDamageText().getString() != "MISS" && battle->GetDamageText().getString() != "")
+				{
+					battle->GetTarget().entity->SetTransparency(255 * (battle->GetSpellFrameClock().getElapsedTime().asMilliseconds() % 2));
+				}
+				else battle->GetTarget().entity->SetTransparency(255);
+			}*/
+
+
+				//Fade Damage Text
 			if (battle->GetTextFadeClock().getElapsedTime().asSeconds() < 1)
 			{
 				battle->GetDamageText().setColor(sf::Color(255, 255, 255, 255 - 255 * battle->GetTextFadeClock().getElapsedTime().asSeconds()));
 				battle->GetDamageText().setPosition(battle->GetDamageText().getPosition().x, battle->GetDamageText().getPosition().y - 0.25f);
 			}
 
-			// For one second after player attack play attack animation
-			// and cause monster to blink indicating a hit
+				// For one second after player attack play attack animation
+				// and cause monster to blink indicating a hit
 			if (battle->GetSpellFrameClock().getElapsedTime().asSeconds() < 1 && battle->GetPlayerAtt())
 			{
 				_animationManager.GetSpellSprite()->play(*_animationManager.GetSpellAnimation());
 				_animationManager.GetSpellSprite()->move(sf::Vector2f(-3.0f, 0.0f));
 				_animationManager.GetSpellSprite()->update(battle->GetSpellFrameClock().getElapsedTime());
 				_mainWindow.draw(*_animationManager.GetSpellSprite());
-				battle->GetMonster()->SetTransparency(255 * (battle->GetSpellFrameClock().getElapsedTime().asMilliseconds() % 2 ));
 			}
-			else battle->GetMonster()->SetTransparency(255);
-
-			// For one second after monster attack cause player to flash indicating hit.
-			if (battle->GetSpellFrameClock().getElapsedTime().asSeconds() < 1 && !battle->GetPlayerAtt() && battle->GetDamageText().getString() != "MISS" && battle->GetDamageText().getString() != "")
-			{
-				battle->GetPlayer()->SetTransparency(255 * (battle->GetSpellFrameClock().getElapsedTime().asMilliseconds() % 2));
-			}
-			else battle->GetPlayer()->SetTransparency(255);
 
 			_mainWindow.draw(battle->GetDamageText());
 			_mainWindow.display();
 
-			if (battle->GetPlayer()->GetCurrentHP() <= 0 || battle->GetMonster()->GetCurrentHP() <= 0)
+
+			int playerDeadCount = 0;
+			for (int i = 0; i < Game::playerParty.size(); i++)
 			{
-				if (battle->GetTurn() != 2) battle->GetTurnTimer().restart();
-				battle->SetTurn(2);
-				if (battle->GetTurn() == 2 && battle->GetTurnTimer().getElapsedTime().asSeconds() > 1)
+				if (Game::playerParty[i]->GetStat(Stats::curHP) <= 0)
+					playerDeadCount++;
+			}
+			int monsterDeadCount = 0;
+			for (int i = 0; i < battle->GetMonsterParty().size(); i++)
+			{
+				if (battle->GetMonsterParty()[i]->GetStat(Stats::curHP) <= 0)
 				{
-					if (battle->GetPlayer()->GetCurrentHP() <= 0)
+					monsterDeadCount++;
+				}
+			}
+
+			/*if (playerDeadCount == Game::playerParty.size() || battle->GetMonsterParty().size() == monsterDeadCount)
+			{
+
+				/*if (battle->GetActiveEntity().entity == NULL && battle->GetTurnTimer().getElapsedTime().asSeconds() > 1)
+				{
+					if (playerDeadCount == Game::playerParty.size())
 					{
-						battle->GetPlayer()->AddHP(battle->GetPlayer()->GetMaxHP());
-						battle->GetMonster()->AddHP(battle->GetMonster()->GetMaxHP() - battle->GetMonster()->GetCurrentHP());
-						battle->GetMonster()->SetPosition(battle->GetMonsterPos());
-						battle->GetMonster()->SetScale(1, 1);
-					}
-					if (battle->GetMonster()->GetCurrentHP() <= 0)
-					{
-						battle->GetPlayer()->GainXP(battle->GetMonster()->GetXPReward());
-						battle->GetMonster()->SetPosition(battle->GetMonsterPos());
-						Equipment* itemDrop = new Equipment(*battle->GetMonster());
-						currentMap->GetEquipmentOnFloor().push_back(itemDrop);
-						for (int i = 0; i < currentMap->GetSpawnedMonsters().size(); i++)
+						for (int i = 0; i < Game::playerParty.size(); i++)
 						{
-							if (currentMap->GetSpawnedMonsters()[i] != NULL && currentMap->GetSpawnedMonsters()[i]->GetCurrentHP() <= 0)
-							{
-								currentMap->GetSpawnedMonsters()[i] = currentMap->GetSpawnedMonsters().back();
-								currentMap->GetSpawnedMonsters().pop_back();
-								break;
-							}
+							Game::playerParty[i]->AddHP(Game::playerParty[i]->GetMaxHP());
+						}
+						for (int i = 0; i < battle->GetMonsterParty().size(); i++)
+						{
+							battle->GetMonsterParty()[i]->AddHP(battle->GetMonsterParty()[i]->GetMaxHP() - battle->GetMonsterParty()[i]->GetCurrentHP());
+							battle->GetMonsterParty()[i]->SetPosition(battle->GetMonsterPos());
+							battle->GetMonsterParty()[i]->SetScale(1, 1);
 						}
 					}
-					player1->SetPosition(battle->GetPlayerPos());
-					player1->SetScale(1, 1);
+					int loc = 99;
+					if (monsterDeadCount == battle->GetMonsterParty().size())
+					{
+						for (int i = 0; i < battle->GetMonsterParty().size(); i++)
+						{
+							if (battle->GetMonsterParty()[i]->GetCurrentHP() <= 0)
+							{
+								for (int j = 0; j < Game::playerParty.size(); j++)
+									Game::playerParty[j]->GainXP(battle->GetMonsterParty()[i]->GetXPReward());
+
+								Equipment* itemDrop = new Equipment(*battle->GetMonsterParty()[i]);
+								currentMap->GetEquipmentOnFloor().push_back(itemDrop);
+							}
+						}
+						for (int i = 0; i < battle->GetMonsterParty().size(); i++)
+						{
+							for (int j = 0; j < currentMap->GetSpawnedMonsters().size(); j++)
+							{
+								for (int k = 0; k < currentMap->GetSpawnedMonsters()[j].size(); k++)
+								{
+									if (currentMap->GetSpawnedMonsters()[j][k] == battle->GetMonsterParty()[i])
+									{
+										loc = j;
+										delete currentMap->GetSpawnedMonsters()[j][k];
+									}
+								}
+							}
+						}
+						currentMap->GetSpawnedMonsters()[loc] == currentMap->GetSpawnedMonsters().back();
+						currentMap->GetSpawnedMonsters().pop_back();
+					}
+					playerParty[0]->SetPosition(battle->GetPlayerPos());
+					playerParty[0]->SetScale(1, 1);
+					currentMap->do_fov(playerParty[0]->GetPosition().x, playerParty[0]->GetPosition().y, 96);
+					battle = NULL;
 					_gameState = Game::Playing;
 				}
 			}
-			break;
+			break;*/
 	}
 }
 
@@ -308,9 +345,10 @@ sf::RenderWindow Game::_mainWindow;
 GameObjectManager Game::_gameObjectManager;
 GuiObjectManager Game::_guiObjectManager;
 AnimationManager Game::_animationManager;
+InputHandler Game::_inputHandler;
 sf::Font Game::font;
 boost::mt19937 Game::rng;
-std::vector<Equipment*> Game::equipmentOnFloor;
+std::vector<Player*> Game::playerParty;
 Battle* Game::battle;
 std::string Game::DIFFICULTY_SETTING;
 lua_State* Game::lua_state;

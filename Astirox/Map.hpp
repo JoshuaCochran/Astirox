@@ -25,6 +25,12 @@ struct TeleportInfo{
 	sf::Vector2f targetPos;
 	std::string targetMap;
 };
+
+struct TilemapObject{
+	std::string object_type;
+	std::vector<Monster*> monster;
+};
+
 struct s_FogOfWar
 {
 	sf::Sprite sprite;
@@ -65,6 +71,7 @@ public:
 	bool is_portal(sf::Vector2f point);
 	bool is_monster(sf::Vector2f point);
 	bool is_player(sf::Vector2f point);
+	std::vector<Monster*>& get_monster_at(sf::Vector2f point);
 
 	void set_map(sf::Vector2f point, std::string str);
 	void draw_map();
@@ -91,6 +98,9 @@ private:
 	std::vector<Equipment*> equipmentOnFloor;
 
 	const int monsterPartySize = 4;
+
+	TilemapObject tile_map[64][48];
+
 	
 	sf::Texture fogTexture;
 	std::vector<s_FogOfWar> fogOfWar;

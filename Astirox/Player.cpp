@@ -1,36 +1,28 @@
 #include "stdafx.h"
 #include "Player.h"
 #include "Game.h"
-#include "ServiceLocator.h"
-#include "Monster.h"
-#include "Battle.h"
-#include "Map.hpp"
 
-
-
-
-Player::Player() :
-_velocity(0), _maxVelocity(600.0f)
+Player::Player()
 {
 	//	Init LUA
-	player_lua_state = luaL_newstate();
-	luaL_dofile(player_lua_state, "data/scripts/player/player.lua");
-	luaL_openlibs(player_lua_state);
-	lua_pcall(player_lua_state, 0, 0, 0);
+	lua_state = luaL_newstate();
+	luaL_dofile(lua_state, "data/scripts/player/player.lua");
+	luaL_openlibs(lua_state);
+	lua_pcall(lua_state, 0, 0, 0);
 	
-	getGlobalNamespace(player_lua_state)
+	getGlobalNamespace(lua_state)
 		.beginClass <Player>("Player")
 			.addFunction("BaseStat", &Player::GetBaseStat)
 			.addFunction("GearStat", &Player::GetGearStat)
 			.addFunction("StatMod", &Player::GetStatMod)
 		.endClass();
 
-	push(player_lua_state, this);
-	lua_setglobal(player_lua_state, "player");
+	push(lua_state, this);
+	lua_setglobal(lua_state, "player");
 
-	LuaRef spriteTable = getGlobal(player_lua_state, "t_player")["sprite"];
-	LuaRef baseStatTable = getGlobal(player_lua_state, "t_player")["baseStats"];
-	LuaRef statModTable = getGlobal(player_lua_state, "t_player")["modifiers"];
+	LuaRef spriteTable = getGlobal(lua_state, "t_player")["sprite"];
+	LuaRef baseStatTable = getGlobal(lua_state, "t_player")["baseStats"];
+	LuaRef statModTable = getGlobal(lua_state, "t_player")["modifiers"];
 
 	// Load Default Player Sprite
 	if (spriteTable["spriteLeftPos"].isNil())
@@ -80,13 +72,14 @@ _velocity(0), _maxVelocity(600.0f)
 	statModifiers[statModifiers::xp] = statModTable["xp_modifier"].cast<double>();
 	statModifiers[statModifiers::jp] = statModTable["jp_modifier"].cast<double>();
 
-	stats[ePlayerStats::level] = 1;
+	stats[Stats::level] = 1;
 
 	UpdateStats();
-	stats[ePlayerStats::curHP] = stats[ePlayerStats::maxHP];
-	stats[ePlayerStats::curMP] = stats[ePlayerStats::maxMP];
-	stats[ePlayerStats::gold] = 0;
+	stats[Stats::curHP] = stats[Stats::maxHP];
+	stats[Stats::curMP] = stats[Stats::maxMP];
+	stats[Stats::gold] = 0;
 
+	friendly = true;
 
 	playerEquipment.push_back(NULL);
 	playerEquipment.push_back(NULL);
@@ -106,9 +99,9 @@ Player::~Player()
 
 void Player::ReloadScripts()
 {
-	luaL_dofile(player_lua_state, "data/scripts/player.lua");
-	LuaRef baseStatTable = luabridge::getGlobal(player_lua_state, "t_player")["baseStats"];
-	LuaRef statModTable = luabridge::getGlobal(player_lua_state, "t_player")["modifiers"];
+	luaL_dofile(lua_state, "data/scripts/player.lua");
+	LuaRef baseStatTable = luabridge::getGlobal(lua_state, "t_player")["baseStats"];
+	LuaRef statModTable = luabridge::getGlobal(lua_state, "t_player")["modifiers"];
 
 	statModifiers[statModifiers::str] = statModTable["str_modifier"].cast<double>();
 	statModifiers[statModifiers::dex] = statModTable["dex_modifier"].cast<double>();
@@ -128,12 +121,12 @@ void Player::ReloadScripts()
 	UpdateStats();
 }
 
-std::vector<std::function<std::string(Player&, Monster&)>>& Player::GetSpellInventory()
+std::vector<std::function<std::string(Entity&, Entity&)>>& Player::GetSpellInventory()
 {
 	return spellInventory;
 }
 
-void Player::Draw(sf::RenderWindow & rw)
+/*void Player::Draw(sf::RenderWindow & rw)
 {
 	std::stringstream ss;
 	ss << "(" << GetPosition().x << "," << GetPosition().y << ")";
@@ -145,18 +138,18 @@ void Player::Draw(sf::RenderWindow & rw)
 	Game::GetWindow().draw(text);
 	
 	VisibleGameObject::Draw(rw);
-}
+}*/
 
 void Player::DrawStats(sf::RenderWindow & renderWindow)
 {
 	std::stringstream ss;
-	ss << name << "Level: " << stats[ePlayerStats::level]
-		<< "\n\nStrength:   \t\t\t\t\t\t\t\t\t" << stats[ePlayerStats::str]
-		<< "\n\nDexterity:   \t\t\t\t\t\t\t\t\t" << stats[ePlayerStats::dex]
-		<< "\n\nInteligence:   \t\t\t\t\t\t\t\t" << stats[ePlayerStats::intel]
-		<< "\n\nWisdom:\t\t\t\t\t\t\t\t\t\t" << stats[ePlayerStats::wis]
-		<< "\n\nVitality: \t\t\t\t\t\t\t\t\t\t" << stats[ePlayerStats::stam]
-		<< "\n\n\n\n\nStat Points:\t\t\t\t\t\t\t\t\t" << stats[ePlayerStats::statPts];
+	ss << name << "Level: " << stats[Stats::level]
+		<< "\n\nStrength:   \t\t\t\t\t\t\t\t\t" << stats[Stats::str]
+		<< "\n\nDexterity:   \t\t\t\t\t\t\t\t\t" << stats[Stats::dex]
+		<< "\n\nInteligence:   \t\t\t\t\t\t\t\t" << stats[Stats::intel]
+		<< "\n\nWisdom:\t\t\t\t\t\t\t\t\t\t" << stats[Stats::wis]
+		<< "\n\nVitality: \t\t\t\t\t\t\t\t\t\t" << stats[Stats::stam]
+		<< "\n\n\n\n\nStat Points:\t\t\t\t\t\t\t\t\t" << stats[Stats::statPts];
 	std::string z(ss.str());
 	sf::Text text(z, Game::font);
 	text.setCharacterSize(10);
@@ -167,51 +160,39 @@ void Player::DrawStats(sf::RenderWindow & renderWindow)
 	renderWindow.draw(text);
 }
 
-void Player::Update(float elapsedTime)
+void Player::Update(Map& map, sf::Event currentEvent)
 {
 }
 
-bool Player::move(int x, int y)
+void Player::update_map_pos(sf::Vector2f previous, sf::Vector2f target)
 {
-	if (!checkCollision(*Game::currentMap, x, y))
+	Game::currentMap->set_map(previous, ".");
+	Game::currentMap->set_map(target, "@");
+	Game::currentMap->AddMove();
+	Game::currentMap->do_fov(target.x, target.y, 96);
+	Game::currentMap->draw_map();
+}
+
+bool Player::collision(Map& map, sf::Vector2f point)
+{
+	if (map.is_player(point) || map.is_wall(point))
+		return true;
+	else if (map.is_portal(point))
 	{
-		Game::currentMap->set_map(GetPosition(), ".");
-		GetSprite().move(x, y);
-		Game::currentMap->set_map(GetPosition(), "@");
-		Game::currentMap->AddMove();
-		Game::currentMap->do_fov(GetPosition().x, GetPosition().y, 96);
-		Game::currentMap->draw_map();
+		map.UsePortal(*this, point);
 		return true;
 	}
-	else return false;
-}
-
-bool Player::moveto(Map& map, sf::Event currentEvent)
-{
-	float x = 0.0f;
-	float y = 0.0f;
-	if (currentEvent.type == sf::Event::KeyReleased)
+	else if (map.is_monster(point))
 	{
-		switch (currentEvent.key.code)
-		{
-		case sf::Keyboard::Left:
-			return move(-16, 0);
-			break;
-		case sf::Keyboard::Right:
-			return move(16, 0);
-			break;
-		case sf::Keyboard::Up:
-			return move(0, -16);
-			break;
-		case sf::Keyboard::Down:			
-			return move(0, 16);
-			break;
-		}
+		Battle* combat = new Battle(Game::playerParty, map.get_monster_at(point), false);
+		return true;
 	}
-	return false;
+	else
+		return false;
+
 }
 
-bool Player::checkCollision(Map& map, float x, float y)
+/*bool Player::checkCollision(Map& map, float x, float y)
 {
 	sf::Vector2f point(GetPosition().x + x, GetPosition().y + y);
 
@@ -247,67 +228,12 @@ bool Player::checkCollision(Map& map, float x, float y)
 		return true;
 	}
 	else return false;
-}
-
-std::string Player::GetName() const
-{
-	return name;
-}
-
-int Player::GetCurrentHP() const
-{
-	return stats[ePlayerStats::curHP];
-}
-
-int Player::GetMaxHP() const
-{
-	return stats[ePlayerStats::maxHP];
-}
-
-int Player::GetCurrentMP() const
-{
-	return stats[ePlayerStats::curMP];
-}
-int Player::GetMaxMP() const
-{
-	return stats[ePlayerStats::maxMP];
-}
-int Player::GetCurrentXP() const
-{
-	return stats[ePlayerStats::curXP];
-}
-int Player::GetXPNeeded() const
-{
-	return stats[ePlayerStats::xpNeeded];
-}
-
-int Player::GetPhysAttDmg() const
-{
-	return stats[ePlayerStats::pATT];
-}
-
-int Player::GetLevel() const
-{
-	return stats[ePlayerStats::level];
-}
-
-int Player::GetDefense() const
-{
-	return stats[ePlayerStats::defense];
-}
-
-void Player::AddHP(int hp)
-{
-	stats[ePlayerStats::curHP] += hp;
-	if (stats[ePlayerStats::curHP] <= 0)
-		GetSprite().rotate(-90.0f);
-	else GetSprite().setRotation(0);
-}
+}*/
 
 void Player::GainXP(int num)
 {
-	stats[ePlayerStats::curXP] += num;
-	if (stats[ePlayerStats::curXP] >= stats[ePlayerStats::xpNeeded])
+	stats[Stats::curXP] += num;
+	if (stats[Stats::curXP] >= stats[Stats::xpNeeded])
 	{
 		LevelUp();
 	}
@@ -315,52 +241,52 @@ void Player::GainXP(int num)
 
 void Player::LevelUp()
 {
-	stats[ePlayerStats::level] += 1;
-	stats[ePlayerStats::curXP] = 0;
-	stats[ePlayerStats::statPts] += 5;
+	stats[Stats::level] += 1;
+	stats[Stats::curXP] = 0;
+	stats[Stats::statPts] += 5;
 	UpdateStats();
 }
 
 void Player::UpdateStats()
 {
-	LuaRef calculateHP = luabridge::getGlobal(player_lua_state, "calculateHP");
-	LuaRef calculateMP = luabridge::getGlobal(player_lua_state, "calculateMP");
-	LuaRef calculatePATT = luabridge::getGlobal(player_lua_state, "calculatePhysicalAttack");
-	LuaRef calculateMATT = luabridge::getGlobal(player_lua_state, "calculateMagicAttack");
-	LuaRef calculateXPToLevel = luabridge::getGlobal(player_lua_state, "calculateXPToLevel");
-	LuaRef calculateResistance = luabridge::getGlobal(player_lua_state, "calculateResistance");
-	LuaRef calculateDefense = luabridge::getGlobal(player_lua_state, "calculateDefense");
-	LuaRef calculateSpeed = luabridge::getGlobal(player_lua_state, "calculateSpeed");
+	LuaRef calculateHP = luabridge::getGlobal(lua_state, "calculateHP");
+	LuaRef calculateMP = luabridge::getGlobal(lua_state, "calculateMP");
+	LuaRef calculatePATT = luabridge::getGlobal(lua_state, "calculatePhysicalAttack");
+	LuaRef calculateMATT = luabridge::getGlobal(lua_state, "calculateMagicAttack");
+	LuaRef calculateXPToLevel = luabridge::getGlobal(lua_state, "calculateXPToLevel");
+	LuaRef calculateResistance = luabridge::getGlobal(lua_state, "calculateResistance");
+	LuaRef calculateDefense = luabridge::getGlobal(lua_state, "calculateDefense");
+	LuaRef calculateSpeed = luabridge::getGlobal(lua_state, "calculateSpeed");
 
-	stats[ePlayerStats::str] = (baseStats[baseStats::str] + gearStats[eEquipmentStats::Strength]) * statModifiers[statModifiers::str];
-	stats[ePlayerStats::dex] = (baseStats[baseStats::dex] + gearStats[eEquipmentStats::Dexterity]) * statModifiers[statModifiers::dex];
-	stats[ePlayerStats::intel] = (baseStats[baseStats::intel] + gearStats[eEquipmentStats::Intelligence]) * statModifiers[statModifiers::intel];
-	stats[ePlayerStats::wis] = (baseStats[baseStats::wis] + gearStats[eEquipmentStats::Wisdom]) * statModifiers[statModifiers::wis];
-	stats[ePlayerStats::stam] = (baseStats[baseStats::stam] + gearStats[eEquipmentStats::Stamina]) * statModifiers[statModifiers::stam];
-	stats[ePlayerStats::maxHP] = calculateHP();
-	stats[ePlayerStats::maxMP] = calculateMP();
-	stats[ePlayerStats::wdmg] = (baseStats[baseStats::wdmg] + gearStats[eEquipmentStats::Damage]) * statModifiers[statModifiers::wdmg];
-	stats[ePlayerStats::speed] = calculateSpeed();
+	stats[Stats::str] = (baseStats[baseStats::str] + gearStats[eEquipmentStats::Strength]) * statModifiers[statModifiers::str];
+	stats[Stats::dex] = (baseStats[baseStats::dex] + gearStats[eEquipmentStats::Dexterity]) * statModifiers[statModifiers::dex];
+	stats[Stats::intel] = (baseStats[baseStats::intel] + gearStats[eEquipmentStats::Intelligence]) * statModifiers[statModifiers::intel];
+	stats[Stats::wis] = (baseStats[baseStats::wis] + gearStats[eEquipmentStats::Wisdom]) * statModifiers[statModifiers::wis];
+	stats[Stats::stam] = (baseStats[baseStats::stam] + gearStats[eEquipmentStats::Stamina]) * statModifiers[statModifiers::stam];
+	stats[Stats::maxHP] = calculateHP();
+	stats[Stats::maxMP] = calculateMP();
+	stats[Stats::wdmg] = (baseStats[baseStats::wdmg] + gearStats[eEquipmentStats::Damage]) * statModifiers[statModifiers::wdmg];
+	stats[Stats::speed] = calculateSpeed();
 
-	stats[ePlayerStats::pATT] = calculatePATT();
-	stats[ePlayerStats::mATT] = calculateMATT();
-	stats[ePlayerStats::xpNeeded] = calculateXPToLevel();
-	stats[ePlayerStats::res] = calculateResistance();
-	stats[ePlayerStats::defense] = calculateDefense();
+	stats[Stats::pATT] = calculatePATT();
+	stats[Stats::mATT] = calculateMATT();
+	stats[Stats::xpNeeded] = calculateXPToLevel();
+	stats[Stats::res] = calculateResistance();
+	stats[Stats::defense] = calculateDefense();
 
-	/*stats[ePlayerStats::str] = (baseStats[baseStats::str] + gearStats[eEquipmentStats::Strength]) * statModifiers[statModifiers::str];
-	stats[ePlayerStats::dex] = (baseStats[baseStats::dex] + gearStats[eEquipmentStats::Dexterity]) * statModifiers[statModifiers::dex];
-	stats[ePlayerStats::intel] = (baseStats[baseStats::intel] + gearStats[eEquipmentStats::Intelligence]) * statModifiers[statModifiers::intel];;
-	stats[ePlayerStats::wis] = (baseStats[baseStats::wis] + gearStats[eEquipmentStats::Wisdom]) * statModifiers[statModifiers::wis];;
-	stats[ePlayerStats::stam] = (baseStats[baseStats::stam] + gearStats[eEquipmentStats::Stamina]) * statModifiers[statModifiers::stam];;
-	stats[ePlayerStats::maxHP] = ((baseStats[baseStats::stam] + gearStats[eEquipmentStats::Stamina]) * 10) * statModifiers[statModifiers::hp];
-	stats[ePlayerStats::maxMP] = ((baseStats[baseStats::wis] + gearStats[eEquipmentStats::Wisdom]) * 10) * statModifiers[statModifiers::mp];
-	stats[ePlayerStats::wdmg] = (baseStats[baseStats::wdmg] + gearStats[eEquipmentStats::Damage]) * statModifiers[statModifiers::wdmg];;
-	stats[ePlayerStats::pATT] = ceil(stats[ePlayerStats::wdmg] * (stats[ePlayerStats::str] + (stats[ePlayerStats::dex] * 0.8)));
-	stats[ePlayerStats::mATT] = ceil(stats[ePlayerStats::intel] * 0.8);
-	stats[ePlayerStats::xpNeeded] = pow(stats[ePlayerStats::level], 3) + 30;
-	stats[ePlayerStats::res] = ceil((stats[ePlayerStats::intel] * 0.05) + (stats[ePlayerStats::wis] * 0.1) + gearStats[eEquipmentStats::Resistance]) * statModifiers[statModifiers::def];
-	stats[ePlayerStats::defense] = ceil((stats[ePlayerStats::str] * 0.05) + (stats[ePlayerStats::stam] * 0.1) + gearStats[eEquipmentStats::Defense]) * statModifiers[statModifiers::res];*/
+	/*stats[Stats::str] = (baseStats[baseStats::str] + gearStats[eEquipmentStats::Strength]) * statModifiers[statModifiers::str];
+	stats[Stats::dex] = (baseStats[baseStats::dex] + gearStats[eEquipmentStats::Dexterity]) * statModifiers[statModifiers::dex];
+	stats[Stats::intel] = (baseStats[baseStats::intel] + gearStats[eEquipmentStats::Intelligence]) * statModifiers[statModifiers::intel];;
+	stats[Stats::wis] = (baseStats[baseStats::wis] + gearStats[eEquipmentStats::Wisdom]) * statModifiers[statModifiers::wis];;
+	stats[Stats::stam] = (baseStats[baseStats::stam] + gearStats[eEquipmentStats::Stamina]) * statModifiers[statModifiers::stam];;
+	stats[Stats::maxHP] = ((baseStats[baseStats::stam] + gearStats[eEquipmentStats::Stamina]) * 10) * statModifiers[statModifiers::hp];
+	stats[Stats::maxMP] = ((baseStats[baseStats::wis] + gearStats[eEquipmentStats::Wisdom]) * 10) * statModifiers[statModifiers::mp];
+	stats[Stats::wdmg] = (baseStats[baseStats::wdmg] + gearStats[eEquipmentStats::Damage]) * statModifiers[statModifiers::wdmg];;
+	stats[Stats::pATT] = ceil(stats[Stats::wdmg] * (stats[Stats::str] + (stats[Stats::dex] * 0.8)));
+	stats[Stats::mATT] = ceil(stats[Stats::intel] * 0.8);
+	stats[Stats::xpNeeded] = pow(stats[Stats::level], 3) + 30;
+	stats[Stats::res] = ceil((stats[Stats::intel] * 0.05) + (stats[Stats::wis] * 0.1) + gearStats[eEquipmentStats::Resistance]) * statModifiers[statModifiers::def];
+	stats[Stats::defense] = ceil((stats[Stats::str] * 0.05) + (stats[Stats::stam] * 0.1) + gearStats[eEquipmentStats::Defense]) * statModifiers[statModifiers::res];*/
 
 	/*if (unlocked_jobs.size() == 1 && unlocked_jobs[vagabond].getLevel() >= 3)
 	{
@@ -372,9 +298,9 @@ void Player::UpdateStats()
 
 void Player::AddStat(int stat, int num)
 {
-	if (stats[ePlayerStats::statPts] > 0)
+	if (stats[Stats::statPts] > 0)
 	{
-		stats[ePlayerStats::statPts] -= num;
+		stats[Stats::statPts] -= num;
 		stats[stat] += num;
 	}
 	UpdateStats();
@@ -399,49 +325,49 @@ int Player::GetStat(int stat) const
 int Player::GetBaseStat(std::string stat)
 {
 	if (boost::iequals(stat, "str") || boost::iequals(stat, "strength"))
-		return stats[ePlayerStats::str];
+		return stats[Stats::str];
 	else if (boost::iequals(stat, "dex") || boost::iequals(stat, "dexterity"))
-		return stats[ePlayerStats::dex];
+		return stats[Stats::dex];
 	else if (boost::iequals(stat, "int") || boost::iequals(stat, "intelligence"))
-		return stats[ePlayerStats::intel];
+		return stats[Stats::intel];
 	else if (boost::iequals(stat, "wis") || boost::iequals(stat, "wisdom"))
-		return stats[ePlayerStats::wis];
+		return stats[Stats::wis];
 	else if (boost::iequals(stat, "stam") || boost::iequals(stat, "stamina"))
-		return stats[ePlayerStats::stam];
+		return stats[Stats::stam];
 	else if (boost::iequals(stat, "max HP") || boost::iequals(stat, "maxHP"))
-		return stats[ePlayerStats::maxHP];
+		return stats[Stats::maxHP];
 	else if (boost::iequals(stat, "max MP") || boost::iequals(stat, "maxMP"))
-		return stats[ePlayerStats::maxMP];
+		return stats[Stats::maxMP];
 	else if (boost::iequals(stat, "def") || boost::iequals(stat, "defense"))
-		return stats[ePlayerStats::defense];
+		return stats[Stats::defense];
 	else if (boost::iequals(stat, "res") || boost::iequals(stat, "resistance"))
-		return stats[ePlayerStats::res];
+		return stats[Stats::res];
 	else if (boost::iequals(stat, "pATT") || boost::iequals(stat, "physical attack"))
-		return stats[ePlayerStats::pATT];
+		return stats[Stats::pATT];
 	else if (boost::iequals(stat, "rATT") || boost::iequals(stat, "ranged attack"))
-		return stats[ePlayerStats::rATT];
+		return stats[Stats::rATT];
 	else if (boost::iequals(stat, "mATT") || boost::iequals(stat, "magic attack"))
-		return stats[ePlayerStats::mATT];
+		return stats[Stats::mATT];
 	else if (boost::iequals(stat, "acc") || boost::iequals(stat, "accuracy"))
-		return stats[ePlayerStats::ACC];
+		return stats[Stats::ACC];
 	else if (boost::iequals(stat, "CHD") || boost::iequals(stat, "crit hit damage") || boost::iequals(stat, "critical hit damage"))
-		return stats[ePlayerStats::CHD];
+		return stats[Stats::CHD];
 	else if (boost::iequals(stat, "CC") || boost::iequals(stat, "crit chance") || boost::iequals(stat, "critical chance"))
-		return stats[ePlayerStats::CC];
+		return stats[Stats::CC];
 	else if (boost::iequals(stat, "level") || boost::iequals(stat, "lvl"))
-		return stats[ePlayerStats::level];
+		return stats[Stats::level];
 	else if (boost::iequals(stat, "stat points") || boost::iequals(stat, "statPts"))
-		return stats[ePlayerStats::statPts];
+		return stats[Stats::statPts];
 	else if (boost::iequals(stat, "curXP") || boost::iequals(stat, "current XP"))
-		return stats[ePlayerStats::curXP];
+		return stats[Stats::curXP];
 	else if (boost::iequals(stat, "xp to level") || boost::iequals(stat, "xpNeeded"))
-		return stats[ePlayerStats::xpNeeded];
+		return stats[Stats::xpNeeded];
 	else if (boost::iequals(stat, "gold"))
-		return stats[ePlayerStats::gold];
+		return stats[Stats::gold];
 	else if (boost::iequals(stat, "wdmg") || boost::iequals(stat, "weapon damage"))
-		return stats[ePlayerStats::wdmg];
+		return stats[Stats::wdmg];
 	else if (boost::iequals(stat, "speed") || boost::iequals(stat, "Speed"))
-		return stats[ePlayerStats::speed];
+		return stats[Stats::speed];
 	else
 		return 0;
 }

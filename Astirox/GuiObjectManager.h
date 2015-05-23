@@ -6,6 +6,9 @@
 #include "Player.h"
 #include "Monster.h"
 
+class Player;
+class Battle;
+
 class GuiObjectManager
 {
 public:

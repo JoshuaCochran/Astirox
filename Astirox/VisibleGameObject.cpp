@@ -80,11 +80,6 @@ void VisibleGameObject::Update(float elapsedTime)
 {
 }
 
-bool VisibleGameObject::moveto(sf::Event currentEvent)
-{
-	return true;
-}
-
 void VisibleGameObject::SetPosition(float x, float y)
 {
 	if (_isLoaded)
@@ -109,12 +104,6 @@ sf::Vector2f VisibleGameObject::GetPosition() const
 	}
 	return sf::Vector2f();
 }
-
-int VisibleGameObject::GetStat(int stat) const
-{
-	return 0;
-}
-
 
 sf::Sprite& VisibleGameObject::GetSprite()
 {
