@@ -60,6 +60,8 @@ public:
 	void EquipItem(Equipment& toBeEquipped);
 	void UnequipItem(int pos);
 
+	virtual bool collision(Map& map, sf::Vector2f point);
+
 	std::vector<std::function<std::string(Entity&, Entity&)>>& GetSpellInventory();
 
 private:
@@ -81,7 +83,6 @@ private:
 	bool can_wear_plate;
 
 	virtual void update_map_pos(sf::Vector2f previous, sf::Vector2f target);
-	virtual bool collision(Map& map, sf::Vector2f point);
 };
 
 #endif

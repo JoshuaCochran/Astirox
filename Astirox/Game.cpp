@@ -1,3 +1,5 @@
+
+
 #include "stdafx.h"
 #include "Game.h"
 #include "SplashScreen.h"
@@ -31,7 +33,12 @@ void Game::Start(void)
 	battle = NULL;
 	DIFFICULTY_SETTING = "NORMAL";
 
-	font.loadFromFile("data/fonts/arial.ttf");
+	if (!font.loadFromFile("data/fonts/arial.ttf"))
+	{
+		std::cout << "ERROR: Cannot load font" << std::endl;
+	}
+	else
+		std::cout << "Successfully loaded font" << std::endl;
 
 	SFMLSoundProvider soundProvider;
 	
@@ -41,19 +48,11 @@ void Game::Start(void)
 	ServiceLocator::RegisterServiceLocator(&soundProvider);
 
 
-	ServiceLocator::GetAudio()->PlaySong("audio/Soundtrack.ogg", true);
+	//ServiceLocator::GetAudio()->PlaySong("audio/Soundtrack.ogg", true);
 
-	Player *player = new Player();
+	player = new Player();
 	player->SetPosition(24, 24);
 	currentMap->do_fov(player->GetPosition().x, player->GetPosition().y, 96);
-	playerParty.push_back(player);
-	Player *player2 = new Player();
-	playerParty.push_back(player2);
-	Player *player3 = new Player();
-	player3->AddHP(-20);
-	playerParty.push_back(player3);
-	Player *player4 = new Player();
-	playerParty.push_back(player4);
 
 	_inputHandler.init();
 	_guiObjectManager.Init();
@@ -113,9 +112,9 @@ void Game::GameLoop()
 {
 	sf::Event currentEvent;
 	_mainWindow.pollEvent(currentEvent);
-	Command* command = _inputHandler.handleInput(currentEvent);//_mainWindow);
-
+	Command* command = _inputHandler.handleInput(currentEvent);
 	_gameObjectManager.Get("cursor")->SetPosition(static_cast<sf::Vector2f>(sf::Mouse::getPosition(_mainWindow)));
+	
 	frameTime.restart();
 	switch (_gameState)
 	{
@@ -133,28 +132,29 @@ void Game::GameLoop()
 			_mainWindow.clear(sf::Color(sf::Color(0, 0, 0)));
 			if (command)
 			{
-				command->execute(*playerParty[0]);
-			}
-
-			/*if (playerParty[0]->moveto(*currentMap, currentEvent))
-			{
+				command->execute(*player);
 				currentMap->UpdateMonsters();
 				currentMap->CheckSpawn();
-			}*/
-			Game::view.setCenter(playerParty[0]->GetPosition().x, playerParty[0]->GetPosition().y);
+			}
+			command = NULL;
+
+			Game::view.setCenter(player->GetPosition().x, player->GetPosition().y);
 			_mainWindow.setView(view);
-			currentMap->DrawAll(_mainWindow);
-			playerParty[0]->Draw(_mainWindow);
 			
+			//_mainWindow.draw(currentMap->GetMapLoader());
+			
+			currentMap->DrawAll(_mainWindow);
+			player->Draw(_mainWindow);
+
 			_mainWindow.setView(_mainWindow.getDefaultView());
-			_guiObjectManager.DrawOOCGUI(_mainWindow, currentEvent, *playerParty[0]);
-			_gameObjectManager.Get("cursor")->Draw(_mainWindow);
+			_guiObjectManager.DrawOOCGUI(_mainWindow, currentEvent, *player);
+			_gameObjectManager.Get("cursor")->Draw(_mainWindow);//*/
 
 
-			//wordWrap("This is a test of the word wrap function. So, here is a very long string that will hopefully demonstrate that the function is, in fact, working as intended so that I may go about working on other problems.");
+			///wordWrap("This is a test of the word wrap function. So, here is a very long string that will hopefully demonstrate that the function is, in fact, working as intended so that I may go about working on other problems.");
 			_mainWindow.display();
 
-			if (currentEvent.type == sf::Event::Closed) _gameState = Game::Exiting;
+			if (currentEvent.type == sf::Event::Closed) _gameState = Game::Exiting;//*/
 			break;
 
 		case Game::Fight:
@@ -162,8 +162,8 @@ void Game::GameLoop()
 			// Player turn is handled within the combat GUI implementation
 			_guiObjectManager.DrawCombatGUI(_mainWindow, currentEvent, *battle);
 			
-			for (int i = 0; i < playerParty.size(); i++)
-				playerParty[i]->Draw(_mainWindow);
+			//for (int i = 0; i < playerParty.size(); i++)
+				player->Draw(_mainWindow);
 			for (int i = 0; i < battle->GetMonsterParty().size(); i++)
 				battle->GetMonsterParty()[i]->Draw(_mainWindow);
 			_gameObjectManager.Get("cursor")->Draw(_mainWindow);
@@ -213,11 +213,11 @@ void Game::GameLoop()
 
 
 			int playerDeadCount = 0;
-			for (int i = 0; i < Game::playerParty.size(); i++)
+			/*for (int i = 0; i < Game::playerParty.size(); i++)
 			{
 				if (Game::playerParty[i]->GetStat(Stats::curHP) <= 0)
 					playerDeadCount++;
-			}
+			}*/
 			int monsterDeadCount = 0;
 			for (int i = 0; i < battle->GetMonsterParty().size(); i++)
 			{
@@ -348,7 +348,8 @@ AnimationManager Game::_animationManager;
 InputHandler Game::_inputHandler;
 sf::Font Game::font;
 boost::mt19937 Game::rng;
-std::vector<Player*> Game::playerParty;
+//std::vector<Player*> Game::playerParty;
+Player* Game::player;
 Battle* Game::battle;
 std::string Game::DIFFICULTY_SETTING;
 lua_State* Game::lua_state;

@@ -184,7 +184,7 @@ bool Player::collision(Map& map, sf::Vector2f point)
 	}
 	else if (map.is_monster(point))
 	{
-		Battle* combat = new Battle(Game::playerParty, map.get_monster_at(point), false);
+		//Battle* combat = new Battle(Game::player, map.get_monster_at(point), false);
 		return true;
 	}
 	else
@@ -249,30 +249,35 @@ void Player::LevelUp()
 
 void Player::UpdateStats()
 {
-	LuaRef calculateHP = luabridge::getGlobal(lua_state, "calculateHP");
-	LuaRef calculateMP = luabridge::getGlobal(lua_state, "calculateMP");
-	LuaRef calculatePATT = luabridge::getGlobal(lua_state, "calculatePhysicalAttack");
-	LuaRef calculateMATT = luabridge::getGlobal(lua_state, "calculateMagicAttack");
-	LuaRef calculateXPToLevel = luabridge::getGlobal(lua_state, "calculateXPToLevel");
-	LuaRef calculateResistance = luabridge::getGlobal(lua_state, "calculateResistance");
-	LuaRef calculateDefense = luabridge::getGlobal(lua_state, "calculateDefense");
-	LuaRef calculateSpeed = luabridge::getGlobal(lua_state, "calculateSpeed");
+	try {
+		LuaRef calculateHP = luabridge::getGlobal(lua_state, "calculateHP");
+		LuaRef calculateMP = luabridge::getGlobal(lua_state, "calculateMP");
+		LuaRef calculatePATT = luabridge::getGlobal(lua_state, "calculatePhysicalAttack");
+		LuaRef calculateMATT = luabridge::getGlobal(lua_state, "calculateMagicAttack");
+		LuaRef calculateXPToLevel = luabridge::getGlobal(lua_state, "calculateXPToLevel");
+		LuaRef calculateResistance = luabridge::getGlobal(lua_state, "calculateResistance");
+		LuaRef calculateDefense = luabridge::getGlobal(lua_state, "calculateDefense");
+		LuaRef calculateSpeed = luabridge::getGlobal(lua_state, "calculateSpeed");
 
-	stats[Stats::str] = (baseStats[baseStats::str] + gearStats[eEquipmentStats::Strength]) * statModifiers[statModifiers::str];
-	stats[Stats::dex] = (baseStats[baseStats::dex] + gearStats[eEquipmentStats::Dexterity]) * statModifiers[statModifiers::dex];
-	stats[Stats::intel] = (baseStats[baseStats::intel] + gearStats[eEquipmentStats::Intelligence]) * statModifiers[statModifiers::intel];
-	stats[Stats::wis] = (baseStats[baseStats::wis] + gearStats[eEquipmentStats::Wisdom]) * statModifiers[statModifiers::wis];
-	stats[Stats::stam] = (baseStats[baseStats::stam] + gearStats[eEquipmentStats::Stamina]) * statModifiers[statModifiers::stam];
-	stats[Stats::maxHP] = calculateHP();
-	stats[Stats::maxMP] = calculateMP();
-	stats[Stats::wdmg] = (baseStats[baseStats::wdmg] + gearStats[eEquipmentStats::Damage]) * statModifiers[statModifiers::wdmg];
-	stats[Stats::speed] = calculateSpeed();
+		stats[Stats::str] = (baseStats[baseStats::str] + gearStats[eEquipmentStats::Strength]) * statModifiers[statModifiers::str];
+		stats[Stats::dex] = (baseStats[baseStats::dex] + gearStats[eEquipmentStats::Dexterity]) * statModifiers[statModifiers::dex];
+		stats[Stats::intel] = (baseStats[baseStats::intel] + gearStats[eEquipmentStats::Intelligence]) * statModifiers[statModifiers::intel];
+		stats[Stats::wis] = (baseStats[baseStats::wis] + gearStats[eEquipmentStats::Wisdom]) * statModifiers[statModifiers::wis];
+		stats[Stats::stam] = (baseStats[baseStats::stam] + gearStats[eEquipmentStats::Stamina]) * statModifiers[statModifiers::stam];
+		stats[Stats::maxHP] = calculateHP();
+		stats[Stats::maxMP] = calculateMP();
+		stats[Stats::wdmg] = (baseStats[baseStats::wdmg] + gearStats[eEquipmentStats::Damage]) * statModifiers[statModifiers::wdmg];
+		stats[Stats::speed] = calculateSpeed();
 
-	stats[Stats::pATT] = calculatePATT();
-	stats[Stats::mATT] = calculateMATT();
-	stats[Stats::xpNeeded] = calculateXPToLevel();
-	stats[Stats::res] = calculateResistance();
-	stats[Stats::defense] = calculateDefense();
+		stats[Stats::pATT] = calculatePATT();
+		stats[Stats::mATT] = calculateMATT();
+		stats[Stats::xpNeeded] = calculateXPToLevel();
+		stats[Stats::res] = calculateResistance();
+		stats[Stats::defense] = calculateDefense();
+	}
+	catch (luabridge::LuaException const& e) {
+		std::cout << "LuaException: " << e.what() << std::endl;
+	}
 
 	/*stats[Stats::str] = (baseStats[baseStats::str] + gearStats[eEquipmentStats::Strength]) * statModifiers[statModifiers::str];
 	stats[Stats::dex] = (baseStats[baseStats::dex] + gearStats[eEquipmentStats::Dexterity]) * statModifiers[statModifiers::dex];

@@ -28,7 +28,7 @@ struct TeleportInfo{
 
 struct TilemapObject{
 	std::string object_type;
-	std::vector<Monster*> monster;
+	Monster* monster;
 };
 
 struct s_FogOfWar
@@ -38,19 +38,23 @@ struct s_FogOfWar
 	bool HasSeen;
 };
 
+struct s_TileSelect
+{
+	sf::Sprite sprite;
+};
+
 class Player;
 
 class Map
 {
 public:
-	Map();
-	Map(std::string filename);
+	Map(std::string filename = "");
 	~Map();
 
 	void DrawAll(sf::RenderWindow& renderWindow);
 	void UpdateMonsters();
-	tmx::MapLoader* GetMapLoader();
-	std::vector<std::vector<Monster*>>& GetSpawnedMonsters();
+	tmx::MapLoader& GetMapLoader();
+	std::vector<Monster*>& GetSpawnedMonsters();
 	std::vector<Equipment*>& GetEquipmentOnFloor();
 
 	int GetMovesSinceSpawn();
@@ -71,7 +75,11 @@ public:
 	bool is_portal(sf::Vector2f point);
 	bool is_monster(sf::Vector2f point);
 	bool is_player(sf::Vector2f point);
-	std::vector<Monster*>& get_monster_at(sf::Vector2f point);
+	Monster* get_monster_at(sf::Vector2f point);
+
+
+	void draw_select_tile(unsigned int x, unsigned int y, sf::RenderWindow& renderWindow);
+	std::vector<s_TileSelect>& GetTileSelect();
 
 	void set_map(sf::Vector2f point, std::string str);
 	void draw_map();
@@ -81,7 +89,7 @@ public:
 
 private:
 	std::string tmxFile; // e.g. map.tmx
-	tmx::MapLoader* mapLoader;
+	tmx::MapLoader mapLoader;
 	lua_State* map_lua_state;
 	int mobMax;
 	int movesSinceSpawn;
@@ -93,8 +101,9 @@ private:
 	std::vector<sf::Vector2f> spawnLocs;
 	std::vector<std::string> spawnCandidates;
 	std::vector<double> candidateRarities;
-	std::vector<Monster*> spawningMonsterParty;
-	std::vector<std::vector<Monster*>> spawnedMonsters;
+	//std::vector<Monster*> spawningMonsterParty;
+	//std::vector<std::vector<Monster*>> spawnedMonsters;
+	std::vector<Monster*> spawnedMonsters;
 	std::vector<Equipment*> equipmentOnFloor;
 
 	const int monsterPartySize = 4;
@@ -108,13 +117,17 @@ private:
 	int FOG_OF_WAR_WIDTH;
 	int FOG_OF_WAR_HEIGHT;
 
+	sf::Texture tileSelectTexture;
+	std::vector<s_TileSelect> tileSelect;
+
+
 	bool is_opaque(unsigned int x, unsigned int y);
 	void cast_light(uint x, uint y, uint radius, uint row,
 		float start_slope, float end_slope, uint xx, uint xy, uint yx,
 		uint yy);
 
 	void AddSpawnCandidate(std::string filename, double rarity);
-	void SpawnMonster();
+	//void SpawnMonster();
 
 	bool CheckSpawnIntersection(std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject>>::_Val_types>::_Myt>& mo, double& totalRarity, std::vector<std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject >> ::_Val_types>::_Myt >>& alreadyChecked);
 

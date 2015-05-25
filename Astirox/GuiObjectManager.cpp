@@ -19,6 +19,7 @@ void GuiObjectManager::Init()
 
 	_statmenu_is_drawn = false;
 	_movingStatMenu = false;
+	_moving_player_HUD = false;
 
 	mSelectedItem = NULL;
 
@@ -152,14 +153,15 @@ VisibleGameObject* GuiObjectManager::Get(std::string name) const
 	return results->second;
 }
 
+
 void GuiObjectManager::DrawOOCGUI(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player)
 {
 	DrawInventory(renderWindow, currentEvent, player);
 	DrawStatMenu(renderWindow, currentEvent, player);
-	for (int i = 0; i < Game::playerParty.size(); i++)
-		DrawHUD(renderWindow, currentEvent, *Game::playerParty[i], sf::Vector2f(792, i * 70), false);
+	DrawHUD(renderWindow, currentEvent, player, sf::Vector2f(792, 70), false);
 }
 
+//trash
 bool GuiObjectManager::DrawCombatGUI(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Battle& battle)
 {
 	Get("combat background")->Draw(renderWindow);
@@ -175,18 +177,6 @@ bool GuiObjectManager::DrawCombatGUI(sf::RenderWindow& renderWindow, sf::Event& 
 			&& &battle.GetTarget() == battle.GetMonsterParty()[i])
 			DrawMonsterHUD(renderWindow, *battle.GetMonsterParty()[i], sf::Vector2f(0, i * 72), true);
 		else DrawMonsterHUD(renderWindow, *battle.GetMonsterParty()[i], sf::Vector2f(0, i * 72), false);
-	}
-	for (int i = 0; i < Game::playerParty.size(); i++)
-	{
-		if (battle.GetActiveEntity().isfriendly() 
-			&& Game::playerParty[i]->GetBoundingRect().contains(sf::Mouse::getPosition(renderWindow).x, sf::Mouse::getPosition(renderWindow).y))
-		{
-			if (currentEvent.type == sf::Event::MouseButtonReleased)
-				battle.SetTarget(Game::playerParty[i], true);
-		}
-		if (&battle.GetTarget() == Game::playerParty[i])
-			DrawHUD(renderWindow, currentEvent, *Game::playerParty[i], sf::Vector2f(792, i * 70), true);
-		else DrawHUD(renderWindow, currentEvent, *Game::playerParty[i], sf::Vector2f(792, i * 70), false);
 	}
 	DrawAttackButton(renderWindow, currentEvent, battle, 0, Game::SCREEN_HEIGHT - 136, 0);
 	return true;
@@ -293,17 +283,16 @@ void GuiObjectManager::DrawHUD(sf::RenderWindow& renderWindow, sf::Event current
 	Get("portrait")->SetPosition(portrait_pos_x, portrait_pos_y);
 
 	UpdateResources(renderWindow, player);
-	if (selected)
-		_guiObjects.find("ahud selected")->second->Draw(renderWindow);
-	else
-		_guiObjects.find("ahud")->second->Draw(renderWindow);
+
+	_guiObjects.find("ahud")->second->Draw(renderWindow);
 	_guiObjects.find("portrait")->second->Draw(renderWindow);
 	_guiObjects.find("hp bar")->second->Draw(renderWindow);
 	_guiObjects.find("mp bar")->second->Draw(renderWindow);
-	_guiObjects.find("xp bar")->second->Draw(renderWindow);
+	_guiObjects.find("xp bar")->second->Draw(renderWindow);//*/
 	//_guiObjects.find("text box")->second->Draw(renderWindow);
 
 	std::stringstream ss;
+
 	ss << player.GetStat(Stats::curHP) << "/" << player.GetStat(Stats::maxHP);
 	sf::Text text(ss.str(), Game::font);
 	text.setCharacterSize(10);

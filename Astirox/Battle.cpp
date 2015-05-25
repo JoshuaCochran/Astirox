@@ -15,13 +15,13 @@ Battle::Battle(std::vector<Player*>& playerParty, std::vector<Monster*>& monster
 		monsterParty[i]->SetScale(3, 3);
 	}
 	m_playerParty = playerParty;
-	playerPos = Game::playerParty[0]->GetPosition();
+/*	playerPos = Game::playerParty[0]->GetPosition();
 	for (int i = 0; i < Game::playerParty.size(); i++)
 	{
 		m_playerParty[i]->SetPosition(Game::SCREEN_WIDTH / 2 + 100 + (48 * i), 
 			Game::SCREEN_HEIGHT / 2 + 96 - (48 * i));
 		m_playerParty[i]->SetScale(3, 3);
-	}
+	}*/
 
 	damageText.setString("");
 	damageText.setFont(Game::font);

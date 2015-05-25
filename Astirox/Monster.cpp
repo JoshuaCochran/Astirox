@@ -188,10 +188,10 @@ bool Monster::checkCollision(Map& map, float x, float y)
 	if (map.is_wall(point)) return true;
 	else if (map.is_player(point))
 	{
-		if (Game::playerParty[0] != NULL)
+		if (Game::player != NULL)
 		{
 			sf::Rect<float> mBB = GetBoundingRect();
-			sf::Rect<float> p1BB = Game::playerParty[0]->GetBoundingRect();
+			sf::Rect<float> p1BB = Game::player->GetBoundingRect();
 			mBB.left += x;
 			mBB.top += y;
 			if (p1BB.intersects(mBB))
@@ -199,15 +199,12 @@ bool Monster::checkCollision(Map& map, float x, float y)
 				//ServiceLocator::GetAudio()->PlaySound("audio/jingles_NES00.ogg");
 				for (int i = 0; i < map.GetSpawnedMonsters().size(); i++)
 				{
-					for (int j = 0; j < map.GetSpawnedMonsters()[i].size(); j++)
+					if (map.GetSpawnedMonsters()[i] == this)
 					{
-						if (map.GetSpawnedMonsters()[i][j] == this)
-						{
-							//Battle* combat = new Battle(Game::playerParty, map.GetSpawnedMonsters()[i], true);
-							//combat->SetTurn(1);
-							//Game::startBattle(combat);
-							return true;
-						}
+						//Battle* combat = new Battle(Game::playerParty, map.GetSpawnedMonsters()[i], true);
+						//combat->SetTurn(1);
+						//Game::startBattle(combat);
+						return true;
 					}
 				}
 			}
@@ -225,11 +222,11 @@ bool Monster::checkCollision(Map& map, float x, float y)
 void Monster::Update(Map& map)
 {
 	// Distance between player and monster
-	float DISTANCE = sqrt(pow((GetPosition().x - Game::playerParty[0]->GetPosition().x), 2.0) - pow(GetPosition().y - Game::playerParty[0]->GetPosition().y, 2));
+	float DISTANCE = sqrt(pow((GetPosition().x - Game::player->GetPosition().x), 2.0) - pow(GetPosition().y - Game::player->GetPosition().y, 2));
 	// Distance between monster and player along the x direction
-	float DISTANCE_X = GetPosition().x - Game::playerParty[0]->GetPosition().x;
+	float DISTANCE_X = GetPosition().x - Game::player->GetPosition().x;
 	// Distance between monster and player along the y direction
-	float DISTANCE_Y = GetPosition().y - Game::playerParty[0]->GetPosition().y;
+	float DISTANCE_Y = GetPosition().y - Game::player->GetPosition().y;
 
 	/* If the distance between the monster and player
 		is less than the aggro radius of the monster activate "AI"*/

@@ -20,14 +20,14 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -52,13 +52,13 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>C:\sfml build\SFML-2.1-sources\SFML-2.1\include;C:\Program Files\boost\boost_1_55_0;C:\C++ external libs\LuaBridge-master\LuaBridge-master\Source\LuaBridge;C:\C++ external libs\lua-5.2.3\src;C:\Users\Joshua\Downloads\Game Graphics\sfml-tmxloader-master\sfml-tmxloader-master\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\SFML-2.3\include;C:\Program Files\boost\boost_1_55_0;C:\C++ external libs\LuaBridge-master\LuaBridge-master\Source\LuaBridge;C:\C++ external libs\lua-5.2.3\src;C:\sfml-tmxloader-master\include;C:\zlib-1.2.8;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\sfml-build-debug\lib\Debug;zlibstat.lib;zlibwapi.lib;zlib.lib;C:\Program Files\boost\boost_1_55_0\libs;C:\C++ external libs\lua-5.2.3\Lua 5.2.3\Debug;C:\Program Files\boost\boost_1_55_0\stage\lib;C:\Program Files %28x86%29\LuaRocks\2.1\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>sfml-system-d.lib;sfml-main-d.lib;sfml-graphics-d.lib;sfml-audio-d.lib;sfml-network-d.lib;sfml-window-d.lib;zlibstat.lib;zlibwapi.lib;zlib.lib;lua52.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\SFML-2.3\lib;C:\Program Files\boost\boost_1_55_0\libs;C:\C++ external libs\lua-5.2.3\Lua 5.2.3\Debug;C:\Program Files\boost\boost_1_55_0\stage\lib;C:\Program Files %28x86%29\LuaRocks\2.1\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>sfml-system-d.lib;sfml-main-d.lib;sfml-graphics-d.lib;sfml-audio-d.lib;sfml-network-d.lib;sfml-window-d.lib;lua52.lib;zlibstat.lib;zlib.lib;zlibwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -70,15 +70,15 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>C:\sfml build\SFML-2.1-sources\SFML-2.1\src;C:\Program Files\boost\boost_1_55_0;C:\C++ external libs\LuaBridge-master\LuaBridge-master\Source\LuaBridge;C:\C++ external libs\lua-5.2.3\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\SFML-2.3\include;C:\Program Files\boost\boost_1_55_0;C:\C++ external libs\LuaBridge-master\LuaBridge-master\Source\LuaBridge;C:\C++ external libs\lua-5.2.3\src;C:\sfml-tmxloader-master\include;C:\zlib-1.2.8;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>C:\sfml-build\lib\Release;zlibstat.lib;zlibwapi.lib;zlib.lib;C:\Program Files\boost\boost_1_55_0\libs;C:\C++ external libs\lua-5.2.3\Lua 5.2.3\Debug;C:\Program Files\boost\boost_1_55_0\stage\lib;C:\Program Files %28x86%29\LuaRocks\2.1\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>sfml-system.lib;sfml-main.lib;sfml-graphics.lib;sfml-audio.lib;sfml-network.lib;sfml-window.lib;zlibstat.lib;zlibwapi.lib;zlib.lib;lua52.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\SFML-2.3\lib;C:\Program Files\boost\boost_1_55_0\libs;C:\C++ external libs\lua-5.2.3\Lua 5.2.3\Debug;C:\Program Files\boost\boost_1_55_0\stage\lib;C:\Program Files %28x86%29\LuaRocks\2.1\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>sfml-system.lib;sfml-main.lib;sfml-graphics.lib;sfml-audio.lib;sfml-network.lib;sfml-window.lib;lua52.lib;zlibstat.lib;zlib.lib;zlibwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -114,12 +114,18 @@
     <ClInclude Include="VisibleGameObject.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\..\..\..\..\sfml-tmxloader-master\src\DebugShape.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\sfml-tmxloader-master\src\MapLayer.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\sfml-tmxloader-master\src\MapLoaderPrivate.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\sfml-tmxloader-master\src\MapLoaderPublic.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\sfml-tmxloader-master\src\MapObject.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\sfml-tmxloader-master\src\pugixml\pugixml.cpp" />
+    <ClCompile Include="..\..\..\..\..\..\..\sfml-tmxloader-master\src\QuadTreeNode.cpp" />
     <ClCompile Include="AnimatedSprite.cpp" />
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="AnimationManager.cpp" />
     <ClCompile Include="Astirox.cpp" />
     <ClCompile Include="Battle.cpp" />
-    <ClCompile Include="DebugShape.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="Equipment.cpp" />
     <ClCompile Include="FileNav.cpp" />
@@ -130,14 +136,8 @@
     <ClCompile Include="Item.cpp" />
     <ClCompile Include="MainMenu.cpp" />
     <ClCompile Include="Map.cpp" />
-    <ClCompile Include="MapLayer.cpp" />
-    <ClCompile Include="MapLoaderPrivate.cpp" />
-    <ClCompile Include="MapLoaderPublic.cpp" />
-    <ClCompile Include="MapObject.cpp" />
     <ClCompile Include="Monster.cpp" />
     <ClCompile Include="Player.cpp" />
-    <ClCompile Include="pugixml.cpp" />
-    <ClCompile Include="QuadTreeNode.cpp" />
     <ClCompile Include="ServiceLocator.cpp" />
     <ClCompile Include="SFMLSoundProvider.cpp" />
     <ClCompile Include="SoundFileCache.cpp" />
