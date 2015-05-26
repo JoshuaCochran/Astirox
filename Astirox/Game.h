@@ -72,6 +72,9 @@ private:
 
 	static GameState _gameState;
 	static sf::RenderWindow _mainWindow;
+	static sf::Event _currentEvent;
+
+	static Command* command;
 
 	static GameObjectManager _gameObjectManager;
 	static GuiObjectManager _guiObjectManager;
