@@ -29,6 +29,10 @@ struct TeleportInfo{
 struct TilemapObject{
 	std::string object_type;
 	Monster* monster;
+	
+	bool on_closed;
+	bool on_open;
+	bool on_path;
 };
 
 struct s_FogOfWar
@@ -41,6 +45,15 @@ struct s_FogOfWar
 struct s_TileSelect
 {
 	sf::Sprite sprite;
+};
+
+struct path_element
+{
+	sf::Vector2f pos;
+	path_element* parent;
+	int f_cost;
+	int g_cost;
+	int h_cost;
 };
 
 class Player;
@@ -86,6 +99,8 @@ public:
 
 	std::vector<s_FogOfWar>& GetFogOfWar();
 	void do_fov(uint x, uint y, uint radius);
+
+	void Astar(sf::Vector2f start, sf::Vector2f goal);
 
 private:
 	std::string tmxFile; // e.g. map.tmx
@@ -136,6 +151,24 @@ private:
 	void AddExitPosY(int posy);
 	void AddTargetPosX(int posx);
 	void AddTargetPosY(int posy);
+
+	/*
+		A* pathfinding functions
+	*/
+
+
+	const int default_g_cost = 10;
+
+	//std::vector<path_element*> Astar(sf::Vector2f start, sf::Vector2f goal);
+	void reconstruct_path(sf::Vector2f came_from, sf::Vector2f current);
+	int heuristic_cost_estimate(sf::Vector2f start, sf::Vector2f goal);
+	bool on_closed(sf::Vector2f point);
+	void set_closed(sf::Vector2f point, bool closed);
+	bool on_open(sf::Vector2f point);
+	void set_open(sf::Vector2f point, bool closed);
+
+	void set_on_path(sf::Vector2f point, bool trulse);
+	bool on_path(sf::Vector2f point);
 };
 
 

@@ -65,7 +65,7 @@ public:
 	std::vector<std::function<std::string(Entity&, Entity&)>>& GetSpellInventory();
 
 private:
-	bool move(int x, int y);
+	//bool move(int x, int y);
 
 	void CalculateStats();
 

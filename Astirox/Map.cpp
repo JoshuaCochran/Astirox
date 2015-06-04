@@ -60,6 +60,10 @@ Map::Map(std::string filename)
 		for (int i = 0; i < 64; i++)
 		{
 			tile_map[i][j].object_type = ".";
+			
+			tile_map[i][j].on_closed = false;
+			tile_map[i][j].on_open = false;
+			tile_map[i][j].on_path = false;
 		}
 	}
 	for (auto layer = GetMapLoader().GetLayers().begin(); layer != GetMapLoader().GetLayers().end(); ++layer)
@@ -344,7 +348,7 @@ void Map::DrawAll(sf::RenderWindow& renderWindow)
 				}
 
 				
-				//The position of the mouse in pixels
+				/*//The position of the mouse in pixels
 				sf::Vector2i pixelPos = sf::Mouse::getPosition(renderWindow);
 
 				//The position of the mouse converted to window coordinates adjusted to the view
@@ -353,7 +357,19 @@ void Map::DrawAll(sf::RenderWindow& renderWindow)
 				worldPos.x = worldPos.x - ((int)worldPos.x % 16);
 				worldPos.y = worldPos.y - ((int)worldPos.y % 16);
 
-				draw_select_tile(worldPos.x, worldPos.y, renderWindow);
+				draw_select_tile(worldPos.x, worldPos.y, renderWindow);//*/
+			}
+		}
+	}
+	for (int j = 0; j < 48; j++)
+	{
+		for (int i = 0; i < 64; i++)
+		{
+
+
+			if (tile_map[i][j].on_path)
+			{
+				draw_select_tile(i * 16, j * 16, renderWindow);
 			}
 		}
 	}
@@ -703,4 +719,210 @@ void Map::do_fov(uint x, uint y, uint radius) {
 		cast_light(x, y, radius, 1, 1.0, 0.0, multipliers[0][i],
 			multipliers[1][i], multipliers[2][i], multipliers[3][i]);
 	}
+}
+
+/*
+A* functions
+*/
+
+void Map::Astar(sf::Vector2f start, sf::Vector2f goal)
+{
+	std::cout << "Goal x:" << goal.x << "\nGoal y:" << goal.y << "\n";
+
+	while (!Game::player_path.empty())
+	{
+		delete Game::player_path.top();
+		Game::player_path.pop();
+	}
+
+	for (int j = 0; j < 48; j++)
+	{
+		for (int i = 0; i < 64; i++)
+		{
+			tile_map[i][j].on_path = false;
+			tile_map[i][j].on_closed = false;
+			tile_map[i][j].on_open = false;
+		}
+	}
+
+	if (is_wall(goal))
+		return;
+
+
+	std::vector <path_element*> closed_set;
+	std::vector<path_element*> open_set;
+
+	path_element* beginning = new path_element;
+	
+	beginning->g_cost = 0;
+	beginning->h_cost = heuristic_cost_estimate(start, goal);
+	beginning->f_cost = beginning->g_cost + beginning->h_cost;
+
+	beginning->parent = NULL;
+
+	beginning->pos = start;
+
+	set_open(beginning->pos, true);
+	open_set.push_back(beginning);
+	
+	path_element* current = beginning;
+
+	do
+	{
+		int current_lowest = open_set[0]->f_cost;
+		for (int i = 0; i < open_set.size(); i++)
+		{
+			if (open_set[i]->f_cost <= current_lowest)
+			{
+				current_lowest = open_set[i]->f_cost;
+				current = open_set[i];
+			}
+		}
+
+		if (current->pos == goal)
+		{
+			std::cout << "Found it!\n";
+			break;
+		}
+
+		for (int i = 0; i < open_set.size(); i++)
+		{
+			if (open_set[i]->pos == current->pos)
+			{
+				closed_set.push_back(open_set[i]);
+				set_closed(open_set[i]->pos, true);
+
+				set_open(open_set[i]->pos, false);
+				open_set.erase(open_set.begin() + i);
+			}
+		}
+
+		for (int i = 0; i < 4; i++)
+		{
+			path_element* temp = new path_element;
+			
+			temp->pos = current->pos;
+
+			temp->parent = current;
+
+			if (i == 0)
+				temp->pos.x += 16;
+			else if (i == 1)
+				temp->pos.x -= 16;
+			else if (i == 2)
+				temp->pos.y += 16;
+			else if (i == 3)
+				temp->pos.y -= 16;
+
+			temp->g_cost = current->g_cost + 10;
+			temp->h_cost = heuristic_cost_estimate(temp->pos, goal);
+			temp->f_cost = temp->g_cost + temp->h_cost;
+
+			if (!is_wall(temp->pos) && !on_closed(temp->pos))
+			{
+				if (on_open(temp->pos))
+				{
+					for (int z = 0; z < open_set.size(); z++)
+					{
+						if (open_set[z]->pos == temp->pos)
+						{
+							delete temp;
+							temp = NULL;
+							temp = open_set[z];
+
+							break;
+						}
+					}
+
+					if (temp->g_cost > current->g_cost + 10)
+					{
+						temp->parent = current;
+
+						temp->g_cost = current->g_cost + 10;
+						temp->h_cost = heuristic_cost_estimate(temp->pos, goal);
+						temp->f_cost = temp->g_cost + temp->h_cost;
+					}
+				}
+				else
+				{
+					set_open(temp->pos,true);
+					open_set.push_back(temp);
+				}
+			}
+			else
+			{
+				delete temp;
+				temp = NULL;
+			}
+		}
+	} while (open_set.size() != 0);//*/
+
+	//std::vector<path_element*> path;
+	path_element* nav = current;
+	while (nav != NULL)
+	{
+		set_on_path(nav->pos, true);
+		Game::player_path.push(nav);
+		nav = nav->parent;
+	}
+
+
+	while (!open_set.empty())
+	{
+		if (open_set.back() != NULL && !on_path(open_set.back()->pos))
+		{
+			set_open(open_set.back()->pos, false);
+			delete open_set.back();
+		}
+
+		open_set.pop_back();
+	}
+
+	while (!closed_set.empty())
+	{
+		if (closed_set.back() != NULL && !on_path(closed_set.back()->pos))
+		{
+			set_closed(closed_set.back()->pos, false);
+			delete closed_set.back();
+		}
+
+		closed_set.pop_back();
+	}
+}
+
+int Map::heuristic_cost_estimate(sf::Vector2f start, sf::Vector2f goal)
+{
+	//Manhattan method
+	//std::cout << 10 * (abs(start.x - goal.x) + abs(start.y - goal.y)) << std::endl;
+	return 10 * (abs(start.x - goal.x) + abs(start.y - goal.y));
+}
+
+bool Map::on_closed(sf::Vector2f point)
+{
+	return tile_map[(int)point.x / 16][(int)point.y / 16].on_closed;
+}
+
+void Map::set_closed(sf::Vector2f point, bool closed)
+{
+	tile_map[(int)point.x / 16][(int)point.y / 16].on_closed = closed;
+}
+
+bool Map::on_open(sf::Vector2f point)
+{
+	return tile_map[(int)point.x / 16][(int)point.y / 16].on_open;
+}
+
+void Map::set_open(sf::Vector2f point, bool closed)
+{
+	tile_map[(int)point.x / 16][(int)point.y / 16].on_open = closed;
+}
+
+void Map::set_on_path(sf::Vector2f point, bool trulse)
+{
+	tile_map[(int)point.x / 16][(int)point.y / 16].on_path = trulse;
+}
+
+bool Map::on_path(sf::Vector2f point)
+{
+	return tile_map[(int)point.x / 16][(int)point.y / 16].on_path;
 }

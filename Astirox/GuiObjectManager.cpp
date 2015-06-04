@@ -159,6 +159,15 @@ void GuiObjectManager::DrawOOCGUI(sf::RenderWindow& renderWindow, sf::Event& cur
 	DrawInventory(renderWindow, currentEvent, player);
 	DrawStatMenu(renderWindow, currentEvent, player);
 	DrawHUD(renderWindow, currentEvent, player, sf::Vector2f(792, 70), false);
+
+	std::stringstream ss;
+	ss << "(" << player.GetPosition().x << "," << player.GetPosition().y << ")";
+	sf::Text text(ss.str(), Game::font);
+	text.setCharacterSize(20);
+	text.setStyle(sf::Text::Bold);
+	text.setOrigin(text.getLocalBounds().width / 2, text.getLocalBounds().height / 2);
+	text.setPosition(player.GetPosition().x, player.GetPosition().y + player.GetHeight());
+	renderWindow.draw(text);
 }
 
 //trash

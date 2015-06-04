@@ -30,6 +30,10 @@ Command* InputHandler::handleInput(sf::Event currentEvent)//sf::RenderWindow ren
 		else
 			return NULL;
 	}
+	else if (currentEvent.type == sf::Event::MouseButtonReleased)
+	{
+		return clickToMove_;
+	}
 	else
 		return NULL;
 }
@@ -49,4 +53,5 @@ void InputHandler::init()
 	moveDown_ = new MoveDownCommand();
 	pickUpItem_ = new PickUpItemCommand();
 	reloadScripts_ = new ReloadScriptsCommand();
+	clickToMove_ = new ClickToMoveCommand();
 }

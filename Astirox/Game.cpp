@@ -20,6 +20,7 @@ void Game::Start(void)
 	_mainWindow.create(sf::VideoMode(Game::SCREEN_WIDTH, Game::SCREEN_HEIGHT, 32), "Astirox");
 	_mainWindow.setFramerateLimit(60);
 	//_mainWindow.setVerticalSyncEnabled(true);
+	
 	view.reset(sf::FloatRect(24, 24, 256, 192));
 	view.setViewport(sf::FloatRect(0.f, 0.f, 0.75f, 1.f));
 
@@ -64,7 +65,7 @@ void Game::Start(void)
 
 	command = NULL;
 
-	_gameState = Game::ShowingSplash;
+	_gameState = Game::Playing;//Game::ShowingSplash;
 
 	while (!IsExiting())
 	{
@@ -135,12 +136,22 @@ void Game::GameLoop()
 
 	case Game::Playing:
 		_mainWindow.clear(sf::Color(sf::Color(0, 0, 0)));
+
+
+		Game::view.setCenter(player->GetPosition().x, player->GetPosition().y);
+		_mainWindow.setView(view);
 		
 		if (command)
 		{
-			command->execute(*player);
+			command->execute(*player, _mainWindow, *currentMap);
 			currentMap->UpdateMonsters();
 			currentMap->CheckSpawn();
+		}
+		else if (!Game::player_path.empty())
+		{
+			Game::player->move(player_path.top()->pos.x - player->GetPosition().x, player_path.top()->pos.y - player->GetPosition().y);
+			delete player_path.top();
+			player_path.pop();
 		}
 		command = NULL;
 
@@ -363,3 +374,4 @@ sf::View Game::view;
 sf::Clock Game::frameTime;
 sf::Event Game::_currentEvent;
 Command* Game::command;
+std::stack<path_element*> Game::player_path;

@@ -24,6 +24,7 @@ private:
 	Command* moveRight_;
 	Command* moveUp_;
 	Command* moveDown_;
+	Command* clickToMove_;
 };
 
 #endif
