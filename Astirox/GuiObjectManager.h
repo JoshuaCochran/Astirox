@@ -22,12 +22,12 @@ public:
 	const static sf::Event& GetInput();
 	VisibleGameObject* Get(std::string name) const;
 	
-	void DrawOOCGUI(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player);
+	void DrawOOCGUI(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player, bool newEvent);
 	bool DrawCombatGUI(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Battle& battle);
 	void DrawHUD(sf::RenderWindow& renderWindow, sf::Event currentEvent, Player& player, sf::Vector2f HUDpos, bool selected);
 	void DrawMonsterHUD(sf::RenderWindow& renderWindow, Monster& monster, sf::Vector2f HUDpos, bool selected);
-	bool DrawInventory(sf::RenderWindow& renderWindow, sf::Event currentEvent, Player& player);
-	void DrawStatMenu(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player);
+	bool DrawInventory(sf::RenderWindow& renderWindow, sf::Event currentEvent, Player& player, bool newEvent);
+	void DrawStatMenu(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player, bool newEvent);
 	void DrawStatButton(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player, int posx, int posy, int stat);
 	void DrawItemStats(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player);
 	void DrawEquippedItems(sf::RenderWindow& renderWindow, Player& player);
@@ -39,6 +39,8 @@ public:
 	void UpdateMonsterResources(sf::RenderWindow& renderWindow, Monster& monster);
 	
 	bool isInventoryDrawn();
+
+	bool movingGUI();
 
 	void UpdateHp(int percentHP);
 	void UpdateMp(int percentMP);
@@ -58,6 +60,7 @@ private:
 
 	bool _statmenu_is_drawn;
 	bool _movingStatMenu;
+	bool _movingGUI;
 
 	bool _moving_player_HUD;
 

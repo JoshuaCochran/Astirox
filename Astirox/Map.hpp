@@ -169,6 +169,8 @@ private:
 
 	void set_on_path(sf::Vector2f point, bool trulse);
 	bool on_path(sf::Vector2f point);
+
+	void resetPlayerPath();
 };
 
 

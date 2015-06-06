@@ -154,11 +154,16 @@ VisibleGameObject* GuiObjectManager::Get(std::string name) const
 }
 
 
-void GuiObjectManager::DrawOOCGUI(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player)
+void GuiObjectManager::DrawOOCGUI(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player, bool newEvent)
 {
-	DrawInventory(renderWindow, currentEvent, player);
-	DrawStatMenu(renderWindow, currentEvent, player);
+	DrawInventory(renderWindow, currentEvent, player, newEvent);
+	DrawStatMenu(renderWindow, currentEvent, player, newEvent);
 	DrawHUD(renderWindow, currentEvent, player, sf::Vector2f(792, 70), false);
+
+	if (_movingInventory || _movingStatMenu)
+		_movingGUI = true;
+	else
+		_movingGUI = false;
 
 	std::stringstream ss;
 	ss << "(" << player.GetPosition().x << "," << player.GetPosition().y << ")";
@@ -323,11 +328,12 @@ void GuiObjectManager::DrawHUD(sf::RenderWindow& renderWindow, sf::Event current
 	Game::GetWindow().draw(text);
 }
 
-void GuiObjectManager::DrawStatMenu(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player)
+void GuiObjectManager::DrawStatMenu(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player, bool newEvent)
 {
 
 	if (currentEvent.type == sf::Event::KeyReleased
-		&& currentEvent.key.code == sf::Keyboard::S)
+		&& currentEvent.key.code == sf::Keyboard::S
+		&& newEvent)
 	{
 		if (_statmenu_is_drawn)
 			_statmenu_is_drawn = false;
@@ -481,10 +487,11 @@ void GuiObjectManager::DrawMonsterHUD(sf::RenderWindow& renderWindow, Monster& m
 	Game::GetWindow().draw(text);
 }
 
-bool GuiObjectManager::DrawInventory(sf::RenderWindow& renderWindow, sf::Event currentEvent, Player& player)
+bool GuiObjectManager::DrawInventory(sf::RenderWindow& renderWindow, sf::Event currentEvent, Player& player, bool newEvent)
 {
 	if (currentEvent.type == sf::Event::KeyReleased
-		&& currentEvent.key.code == sf::Keyboard::I)
+		&& currentEvent.key.code == sf::Keyboard::I
+		&& newEvent)
 	{
 		if (_inventory_is_drawn)
 			_inventory_is_drawn = false;
@@ -566,6 +573,11 @@ void GuiObjectManager::DrawEquippedItems(sf::RenderWindow& renderWindow, Player&
 bool GuiObjectManager::isInventoryDrawn()
 {
 	return _inventory_is_drawn;
+}
+
+bool GuiObjectManager::movingGUI()
+{
+	return _movingGUI;
 }
 
 void GuiObjectManager::DrawItemStats(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player)

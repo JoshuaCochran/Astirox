@@ -80,6 +80,7 @@ class ClickToMoveCommand : public Command
 	virtual ~ClickToMoveCommand() {}
 	virtual void execute(Entity& entity, sf::RenderWindow& renderWindow, Map& currentMap)
 	{
+
 		//The position of the mouse in pixels
 		sf::Vector2i pixelPos = sf::Mouse::getPosition(renderWindow);
 
@@ -93,6 +94,7 @@ class ClickToMoveCommand : public Command
 		std::cout << "xPos: " << xPos << "\nyPos: " << yPos << "\n";
 
 		currentMap.Astar(entity.GetPosition(), sf::Vector2f(xPos, yPos));
+		
 	}
 };
 

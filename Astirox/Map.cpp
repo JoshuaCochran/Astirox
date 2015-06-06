@@ -722,174 +722,246 @@ void Map::do_fov(uint x, uint y, uint radius) {
 }
 
 /*
-A* functions
+	Astar uses the A* algorithm to find the shortest path between two tiles
+	Input:
+	start, sf::Vector2f, the position of the starting tile
+	
+	goal, sf::Vector2f, the position of the goal, or target, tile
+	Output:
+	None
 */
-
 void Map::Astar(sf::Vector2f start, sf::Vector2f goal)
 {
-	std::cout << "Goal x:" << goal.x << "\nGoal y:" << goal.y << "\n";
-
-	while (!Game::player_path.empty())
-	{
-		delete Game::player_path.top();
-		Game::player_path.pop();
-	}
-
-	for (int j = 0; j < 48; j++)
-	{
-		for (int i = 0; i < 64; i++)
-		{
-			tile_map[i][j].on_path = false;
-			tile_map[i][j].on_closed = false;
-			tile_map[i][j].on_open = false;
-		}
-	}
+	resetPlayerPath();
 
 	if (is_wall(goal))
 		return;
 
-
+	//The set of checked tiles
 	std::vector <path_element*> closed_set;
+	//The set of tiles that have been encountered but not yet thoroughly checked
 	std::vector<path_element*> open_set;
 
+	//Initializing the first path_element at the start locatation
 	path_element* beginning = new path_element;
 	
+	//The path_element's g_cost 
+	//is the number of tiles you would have to move through from the starting tile to reach this tile times 10
 	beginning->g_cost = 0;
+
+	//To get a path_element's h_cost 
+	//use the manhattan method to estimate the g_cost of moving from the current tile to the goal
 	beginning->h_cost = heuristic_cost_estimate(start, goal);
+	
+	//The path_element's f_cost is the sum of it's g_cost and h_cost
 	beginning->f_cost = beginning->g_cost + beginning->h_cost;
 
+	//A path_element's parent is the tile adjacent to it 
+	//with the lowest f_score
 	beginning->parent = NULL;
 
+	//A path_element's pos is it's position
 	beginning->pos = start;
 
+	//Add the starting path_element to the closed set
 	set_open(beginning->pos, true);
 	open_set.push_back(beginning);
 	
+	//Set the current path_element to the starting tile's path_element
 	path_element* current = beginning;
 
 	do
 	{
+		//Current lowest is smallest f_cost value of path_elements in the open set
+		//Current lowest is initialized to the first element in the open set
 		int current_lowest = open_set[0]->f_cost;
+
+		//Navigate through the open set comparing the f_cost of each element
+		//and storing the smallest value
+		//The element with the smallest f_cost becomes the new current
 		for (int i = 0; i < open_set.size(); i++)
 		{
+			//If the ith element of open set has a f_cost smaller than the current smallest
 			if (open_set[i]->f_cost <= current_lowest)
 			{
+				//Change current lowest to the f_cost of the ith element
 				current_lowest = open_set[i]->f_cost;
+				//Make current point to the ith element of the open set
 				current = open_set[i];
 			}
 		}
 
+		//If the position of current path_element is equal to the goal
+		//The goal has been reached, so exit the while loop
 		if (current->pos == goal)
-		{
-			std::cout << "Found it!\n";
 			break;
-		}
 
+		//Remove the current path element from the open set and add it to the closed set
 		for (int i = 0; i < open_set.size(); i++)
 		{
+			//If two path_elements have the same position they are the same path_element
+			//So to find the current path_element in the open set compare their pos value
 			if (open_set[i]->pos == current->pos)
 			{
+				//Once current is found in the open set add it to the closed set
 				closed_set.push_back(open_set[i]);
 				set_closed(open_set[i]->pos, true);
 
+				//And remove it from the open set
 				set_open(open_set[i]->pos, false);
 				open_set.erase(open_set.begin() + i);
 			}
 		}
 
+		//The meat of the algorithm
+		//Constructs path_elements for the tiles to the top, bottom, left, and right of current
 		for (int i = 0; i < 4; i++)
 		{
+			//Initializes a new path_element
 			path_element* temp = new path_element;
 			
+			//Sets the new path_element's position to current's position
 			temp->pos = current->pos;
 
+			//Makes the new path_element's parent current
 			temp->parent = current;
 
+			//If i is 0, make the position of the path_element to the right of current
 			if (i == 0)
 				temp->pos.x += 16;
+			//If i is 1, make the position of the path_element to the left of current
 			else if (i == 1)
 				temp->pos.x -= 16;
+			//If i is 2, make the position of the path_element equal to the tile below current
 			else if (i == 2)
 				temp->pos.y += 16;
+			//If is 3, make the position of the path_element equal to the tile above current
 			else if (i == 3)
 				temp->pos.y -= 16;
+			//In this way you create a path element for each tile adjacent to the current tile
 
+			//The g_cost of a new tile is equal to the g_cost of it's parent + 10
+			//Essentially counts the number of tiles it takes to walk from the start to this tile
 			temp->g_cost = current->g_cost + 10;
+			//Use the manhattan method to estimate the cost to get from this new path_element to the goal
 			temp->h_cost = heuristic_cost_estimate(temp->pos, goal);
+			//Calculate the f_cost of this new path_element
 			temp->f_cost = temp->g_cost + temp->h_cost;
 
+			//If the temp path_element is walkable and not already in the closed set
 			if (!is_wall(temp->pos) && !on_closed(temp->pos))
 			{
+				//and the tile is in the open set
 				if (on_open(temp->pos))
 				{
+					//Navigate through the open set
 					for (int z = 0; z < open_set.size(); z++)
 					{
+						//Until you find the path_element equal to the temp path_element
 						if (open_set[z]->pos == temp->pos)
 						{
+							//Delete the temp path_element because there is no need for duplicates
 							delete temp;
 							temp = NULL;
+							//Then set temp to equal the path_element in the open set that had the same position
 							temp = open_set[z];
 
+							//Exit the loop
 							break;
 						}
 					}
 
+					//If the g_cost of the temp path_element is greater than the g_cost of current + 10
+					//In other words if it takes fewer tiles to get to the temp path_element from the current path element
+					//Than from the previous path to the temp tile
 					if (temp->g_cost > current->g_cost + 10)
 					{
+						//Set temp's parent to current
 						temp->parent = current;
 
+						//Recalculate the g_cost, h_cost, and f_cost of temp from current
 						temp->g_cost = current->g_cost + 10;
 						temp->h_cost = heuristic_cost_estimate(temp->pos, goal);
 						temp->f_cost = temp->g_cost + temp->h_cost;
 					}
 				}
+				//If the temp path_element is not in the open set
 				else
 				{
+					//Add temp to the open set
 					set_open(temp->pos,true);
 					open_set.push_back(temp);
 				}
 			}
+			//If the tile at temp's position is not walkable or temp is already on the closed list
 			else
 			{
+				//Delete the temp tile and move on
 				delete temp;
 				temp = NULL;
 			}
 		}
-	} while (open_set.size() != 0);//*/
+	} while (open_set.size() != 0);//Run the loop while the open set is not empty
+									//If the open_set is ever empty then there exists no path to the target tile
 
-	//std::vector<path_element*> path;
-	path_element* nav = current;
-	while (nav != NULL)
+	//If the open set is not empty than a path was found
+	if (!open_set.empty())
 	{
-		set_on_path(nav->pos, true);
-		Game::player_path.push(nav);
-		nav = nav->parent;
+		//So reconstruct the shortest path found
+		//By navigating from current back through it's parents until you reach the starting tile
+		path_element* nav = current;
+		//Exits when the starting tile is reached
+		while (nav != NULL)
+		{
+			//Mark the nav tile as being on the path from start to goal
+			set_on_path(nav->pos, true);
+			//Add the nav path_element to the Game::player_path stack
+			Game::player_path.push(nav);
+			//Make nav point to its parent
+			nav = nav->parent;
+		}
 	}
 
-
+	//Empties the open_set vector and deletes its elements
 	while (!open_set.empty())
 	{
+		//If the last element in the open_set vector is not NULL and is not on the found path
 		if (open_set.back() != NULL && !on_path(open_set.back()->pos))
 		{
+			//Delete the path_element
 			set_open(open_set.back()->pos, false);
 			delete open_set.back();
 		}
-
+		//Then remove it from the open set
 		open_set.pop_back();
 	}
 
+	//Empties the closed_set vector and deletes its elements
 	while (!closed_set.empty())
 	{
+		//If the last element in the closed_set vector is not NULL and is not on the found path
 		if (closed_set.back() != NULL && !on_path(closed_set.back()->pos))
 		{
+			//Delete the path_element
 			set_closed(closed_set.back()->pos, false);
 			delete closed_set.back();
 		}
-
+		//Then remove it from the closed set
 		closed_set.pop_back();
 	}
 }
 
+/*
+	heuristic_cost_estimate runs a heuristic to estimate the cost of moving
+	from a given tile to another tile
+	Input:
+	start, sf::Vector2f, the locatation of the starting tile
+
+	goal, sf::Vector2f, the location of the target tile
+	Output:
+	(integer) The result of the heuristic.
+
+*/
 int Map::heuristic_cost_estimate(sf::Vector2f start, sf::Vector2f goal)
 {
 	//Manhattan method
@@ -925,4 +997,31 @@ void Map::set_on_path(sf::Vector2f point, bool trulse)
 bool Map::on_path(sf::Vector2f point)
 {
 	return tile_map[(int)point.x / 16][(int)point.y / 16].on_path;
+}
+
+/*
+	resetPlayerPath empties and deletes the Game::player_path stack
+	as well as setting all tile_map path variables to false (on_path, on_closed, on_open)
+	Input:
+	none
+	Output:
+	none
+*/
+void Map::resetPlayerPath()
+{
+	while (!Game::player_path.empty())
+	{
+		delete Game::player_path.top();
+		Game::player_path.pop();
+	}
+
+	for (int j = 0; j < 48; j++)
+	{
+		for (int i = 0; i < 64; i++)
+		{
+			tile_map[i][j].on_path = false;
+			tile_map[i][j].on_closed = false;
+			tile_map[i][j].on_open = false;
+		}
+	}
 }

@@ -112,10 +112,11 @@ AnimationManager& Game::GetAnimationManager()
 
 void Game::GameLoop()
 {
-	sf::Event currentEvent;
+	bool newEvent = false;
 	if (_mainWindow.pollEvent(_currentEvent))
 	{
 		command = _inputHandler.handleInput(_currentEvent);
+		newEvent = true;
 	}
 	_gameObjectManager.Get("cursor")->SetPosition(static_cast<sf::Vector2f>(sf::Mouse::getPosition(_mainWindow)));
 
@@ -141,7 +142,7 @@ void Game::GameLoop()
 		Game::view.setCenter(player->GetPosition().x, player->GetPosition().y);
 		_mainWindow.setView(view);
 		
-		if (command)
+		if (command && !GetGuiObjectManager().movingGUI())
 		{
 			command->execute(*player, _mainWindow, *currentMap);
 			currentMap->UpdateMonsters();
@@ -152,6 +153,8 @@ void Game::GameLoop()
 			Game::player->move(player_path.top()->pos.x - player->GetPosition().x, player_path.top()->pos.y - player->GetPosition().y);
 			delete player_path.top();
 			player_path.pop();
+
+			currentMap->UpdateMonsters();
 		}
 		command = NULL;
 
@@ -162,20 +165,20 @@ void Game::GameLoop()
 		player->Draw(_mainWindow);
 
 		_mainWindow.setView(_mainWindow.getDefaultView());
-		_guiObjectManager.DrawOOCGUI(_mainWindow, currentEvent, *player);
+		_guiObjectManager.DrawOOCGUI(_mainWindow, _currentEvent, *player, newEvent);
 		_gameObjectManager.Get("cursor")->Draw(_mainWindow);//*/
 
 
 		///wordWrap("This is a test of the word wrap function. So, here is a very long string that will hopefully demonstrate that the function is, in fact, working as intended so that I may go about working on other problems.");
 		_mainWindow.display();
 
-		if (currentEvent.type == sf::Event::Closed) _gameState = Game::Exiting;//*/
+		if (_currentEvent.type == sf::Event::Closed && newEvent) _gameState = Game::Exiting;//*/
 		break;
 
 	case Game::Fight:
 		_mainWindow.setView(_mainWindow.getDefaultView());
 		// Player turn is handled within the combat GUI implementation
-		_guiObjectManager.DrawCombatGUI(_mainWindow, currentEvent, *battle);
+		_guiObjectManager.DrawCombatGUI(_mainWindow, _currentEvent, *battle);
 
 		//for (int i = 0; i < playerParty.size(); i++)
 		player->Draw(_mainWindow);
