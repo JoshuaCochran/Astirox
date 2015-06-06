@@ -170,7 +170,7 @@ void Player::update_map_pos(sf::Vector2f previous, sf::Vector2f target)
 	Game::currentMap->set_map(target, "@");
 	Game::currentMap->AddMove();
 	Game::currentMap->do_fov(target.x, target.y, 96);
-	Game::currentMap->draw_map();
+	//Game::currentMap->draw_map();
 }
 
 bool Player::collision(Map& map, sf::Vector2f point)

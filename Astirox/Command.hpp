@@ -94,7 +94,6 @@ class ClickToMoveCommand : public Command
 		std::cout << "xPos: " << xPos << "\nyPos: " << yPos << "\n";
 
 		currentMap.Astar(entity.GetPosition(), sf::Vector2f(xPos, yPos));
-		
 	}
 };
 

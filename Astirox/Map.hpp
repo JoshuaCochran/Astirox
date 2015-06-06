@@ -109,6 +109,10 @@ private:
 	int mobMax;
 	int movesSinceSpawn;
 
+	int MAP_SIZE_IN_TILES;
+	int MAP_HEIGHT_IN_TILES;
+	int MAP_WIDTH_IN_TILES;
+
 	sf::RectangleShape* test;
 
 	std::vector<TeleportInfo> portals;
@@ -123,12 +127,12 @@ private:
 
 	const int monsterPartySize = 4;
 
-	TilemapObject tile_map[64][48];
-
+	//TilemapObject tile_map[64][48];
+	TilemapObject** tile_map;
 	
 	sf::Texture fogTexture;
 	std::vector<s_FogOfWar> fogOfWar;
-	std::string opaque_map[64][48];
+//	std::string opaque_map[64][48];
 	int FOG_OF_WAR_WIDTH;
 	int FOG_OF_WAR_HEIGHT;
 

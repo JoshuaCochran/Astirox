@@ -16,9 +16,12 @@ Map::Map(std::string filename)
 	FOG_OF_WAR_HEIGHT = mapLoader.GetMapSize().y / 16;
 	FOG_OF_WAR_WIDTH = mapLoader.GetMapSize().x / 16;
 
+	MAP_SIZE_IN_TILES = (mapLoader.GetMapSize().x / 16) * (mapLoader.GetMapSize().y / 16);
+	MAP_HEIGHT_IN_TILES = mapLoader.GetMapSize().y / 16;
+	MAP_WIDTH_IN_TILES = mapLoader.GetMapSize().x / 16;
 
 	fogTexture.loadFromFile("data/maps/fogTexture.png");
-	for (int i = 0; i < (mapLoader.GetMapSize().x / 16 * mapLoader.GetMapSize().y / 16); i++)
+	for (int i = 0; i < (MAP_WIDTH_IN_TILES * MAP_HEIGHT_IN_TILES); i++)
 	{
 		s_FogOfWar temp;
 		temp.sprite.setTexture(fogTexture);
@@ -27,9 +30,9 @@ Map::Map(std::string filename)
 		fogOfWar.push_back(temp);
 	}
 	int count = 0;
-	for (int j = 0; j < (mapLoader.GetMapSize().x / 16); j++)
+	for (int j = 0; j < (MAP_WIDTH_IN_TILES); j++)
 	{
-		for (int k = 0; k < (mapLoader.GetMapSize().y / 16); k++)
+		for (int k = 0; k < (MAP_HEIGHT_IN_TILES); k++)
 		{
 			fogOfWar[count].sprite.setPosition(j * 16, k * 16);
 			count++;
@@ -37,7 +40,7 @@ Map::Map(std::string filename)
 	}
 
 	tileSelectTexture.loadFromFile("data/images/gui/selected.png");
-	for (int i = 0; i < (mapLoader.GetMapSize().x / 16 * mapLoader.GetMapSize().y / 16); i++)
+	for (int i = 0; i < (MAP_WIDTH_IN_TILES * MAP_HEIGHT_IN_TILES); i++)
 	{
 		s_TileSelect temp;
 		temp.sprite.setTexture(tileSelectTexture);
@@ -45,9 +48,9 @@ Map::Map(std::string filename)
 	}
 
 	count = 0;
-	for (int j = 0; j < (mapLoader.GetMapSize().x / 16); j++)
+	for (int j = 0; j < (MAP_WIDTH_IN_TILES); j++)
 	{
-		for (int k = 0; k < (mapLoader.GetMapSize().y / 16); k++)
+		for (int k = 0; k < (MAP_HEIGHT_IN_TILES); k++)
 		{
 			tileSelect[count].sprite.setPosition(j * 16, k * 16);
 			count++;
@@ -55,7 +58,7 @@ Map::Map(std::string filename)
 	}
 
 
-	for (int j = 0; j < 48; j++)
+	/*for (int j = 0; j < 48; j++)
 	{
 		for (int i = 0; i < 64; i++)
 		{
@@ -65,7 +68,22 @@ Map::Map(std::string filename)
 			tile_map[i][j].on_open = false;
 			tile_map[i][j].on_path = false;
 		}
-	}
+	}//*/
+	tile_map = new TilemapObject*[MAP_WIDTH_IN_TILES];
+	for (int i = 0; i < MAP_WIDTH_IN_TILES; i++)
+		tile_map[i] = new TilemapObject[MAP_HEIGHT_IN_TILES];
+
+	for (int j = 0; j < MAP_HEIGHT_IN_TILES; j++)
+	{
+		for (int i = 0; i < MAP_WIDTH_IN_TILES; i++)
+		{
+			tile_map[i][j].object_type = ".";
+
+			tile_map[i][j].on_closed = false;
+			tile_map[i][j].on_open = false;
+			tile_map[i][j].on_path = false;
+		}
+	}//*/
 	for (auto layer = GetMapLoader().GetLayers().begin(); layer != GetMapLoader().GetLayers().end(); ++layer)
 	{
 		if (layer->name == "Collision")
@@ -133,9 +151,9 @@ Map::Map(std::string filename)
 			}
 		}
 	}
-	for (int j = 0; j < 48; j++)
+	for (int j = 0; j < MAP_HEIGHT_IN_TILES; j++)
 	{
-		for (int i = 0; i < 64; i++)
+		for (int i = 0; i < MAP_WIDTH_IN_TILES; i++)
 		{
 			std::cout << tile_map[i][j].object_type;
 		}
@@ -568,6 +586,7 @@ void Map::draw_map()
 */
 bool Map::is_opaque(unsigned int x, unsigned int y)
 {
+
 	//If the tile at x,y is a wall, denoted #, or a secret entrance, denoted S, return true
 	if (tile_map[x / 16][y / 16].object_type == "#" || tile_map[x / 16][y / 16].object_type == "S")
 		return true;
@@ -583,10 +602,15 @@ bool Map::is_opaque(unsigned int x, unsigned int y)
 */
 bool Map::is_wall(sf::Vector2f point)
 {
-	//If the tile at the x coord and y coord of point is an opaque wall, denoted #, or a non-opaque wall, denoted ',' , return true
-	if (tile_map[(int)point.x / 16][(int)point.y / 16].object_type == "#" 
-		|| tile_map[(int)point.x / 16][(int)point.y / 16].object_type == ",")
-		return true;
+	if ((((int)point.x / 16) < MAP_WIDTH_IN_TILES) && ((int)point.y / 16) < MAP_HEIGHT_IN_TILES
+		&& point.x > 0 && point.y > 0)
+	{
+		//if (((int)point.x / 16)*((int)point.y / 16) 
+		//If the tile at the x coord and y coord of point is an opaque wall, denoted #, or a non-opaque wall, denoted ',' , return true
+		if (tile_map[(int)point.x / 16][(int)point.y / 16].object_type == "#"
+			|| tile_map[(int)point.x / 16][(int)point.y / 16].object_type == ",")
+			return true;
+	}
 	else return false;
 }
 
@@ -599,23 +623,35 @@ bool Map::is_wall(sf::Vector2f point)
 */
 bool Map::is_portal(sf::Vector2f point)
 {
-	//If the tile at point.x,point.y is a portal, denoted P, return true
-	if (tile_map[(int)point.x / 16][(int)point.y / 16].object_type == "P")
-		return true;
+	if ((((int)point.x / 16) < MAP_WIDTH_IN_TILES) && ((int)point.y / 16) < MAP_HEIGHT_IN_TILES
+		&& point.x > 0 && point.y > 0)
+	{
+		//If the tile at point.x,point.y is a portal, denoted P, return true
+		if (tile_map[(int)point.x / 16][(int)point.y / 16].object_type == "P")
+			return true;
+	}
 	else return false;
 }
 
 bool Map::is_monster(sf::Vector2f point)
 {
-	if (tile_map[(int)point.x / 16][(int)point.y / 16].object_type == "m")
-		return true;
+	if ((((int)point.x / 16) < MAP_WIDTH_IN_TILES) && ((int)point.y / 16) < MAP_HEIGHT_IN_TILES
+		&& point.x > 0 && point.y > 0)
+	{
+		if (tile_map[(int)point.x / 16][(int)point.y / 16].object_type == "m")
+			return true;
+	}
 	else return false;
 }
 
 bool Map::is_player(sf::Vector2f point)
 {
-	if (tile_map[(int)point.x / 16][(int)point.y / 16].object_type == "@")
-		return true;
+	if ((((int)point.x / 16) < MAP_WIDTH_IN_TILES) && ((int)point.y / 16) < MAP_HEIGHT_IN_TILES
+		&& point.x > 0 && point.y > 0)
+	{
+		if (tile_map[(int)point.x / 16][(int)point.y / 16].object_type == "@")
+			return true;
+	}
 	else return false;
 }
 
