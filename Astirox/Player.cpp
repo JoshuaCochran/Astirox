@@ -184,7 +184,14 @@ bool Player::collision(Map& map, sf::Vector2f point)
 	}
 	else if (map.is_monster(point))
 	{
-		//Battle* combat = new Battle(Game::player, map.get_monster_at(point), false);
+		if (map.get_monster_at(point) != NULL)
+		{
+			std::cout << map.get_monster_at(point)->GetName() << "\n";
+			map.get_monster_at(point)->AddHP(-5);
+			if (map.get_monster_at(point)->GetStat(Stats::curHP) <= 0)
+				map.GetEquipmentOnFloor().push_back(new Equipment(*map.get_monster_at(point)));
+
+		}
 		return true;
 	}
 	else

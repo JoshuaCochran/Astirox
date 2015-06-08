@@ -27,6 +27,7 @@ struct TeleportInfo{
 };
 
 struct TilemapObject{
+	TilemapObject() : object_type(""), monster(NULL), on_closed(false), on_open(false), on_path(false) {}
 	std::string object_type;
 	Monster* monster;
 	
@@ -89,6 +90,7 @@ public:
 	bool is_monster(sf::Vector2f point);
 	bool is_player(sf::Vector2f point);
 	Monster* get_monster_at(sf::Vector2f point);
+	void monster_moved(sf::Vector2f from, sf::Vector2f to);
 
 
 	void draw_select_tile(unsigned int x, unsigned int y, sf::RenderWindow& renderWindow);
@@ -100,7 +102,7 @@ public:
 	std::vector<s_FogOfWar>& GetFogOfWar();
 	void do_fov(uint x, uint y, uint radius);
 
-	void Astar(sf::Vector2f start, sf::Vector2f goal);
+	void Astar(sf::Vector2f start, sf::Vector2f goal, Entity& entity);
 
 private:
 	std::string tmxFile; // e.g. map.tmx
@@ -148,7 +150,7 @@ private:
 	void AddSpawnCandidate(std::string filename, double rarity);
 	//void SpawnMonster();
 
-	bool CheckSpawnIntersection(std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject>>::_Val_types>::_Myt>& mo, double& totalRarity, std::vector<std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject >> ::_Val_types>::_Myt >>& alreadyChecked);
+	double CheckSpawnIntersection(std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject>>::_Val_types>::_Myt>& mo, double& totalRarity, std::vector<std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject >> ::_Val_types>::_Myt >>& alreadyChecked);
 
 	void AddTargetMap(std::string filename);
 	void AddExitPosX(int posx);
@@ -174,7 +176,7 @@ private:
 	void set_on_path(sf::Vector2f point, bool trulse);
 	bool on_path(sf::Vector2f point);
 
-	void resetPlayerPath();
+	void resetPath(Entity& entity);
 };
 
 

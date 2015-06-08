@@ -21,6 +21,10 @@ void GuiObjectManager::Init()
 	_movingStatMenu = false;
 	_moving_player_HUD = false;
 
+	_mouseInInvent = false;
+	_mouseInStats = false;
+	_mouseInHUD = false;
+
 	mSelectedItem = NULL;
 
 	_statButtonTexture.loadFromFile("data/green_left_button.png");
@@ -160,7 +164,8 @@ void GuiObjectManager::DrawOOCGUI(sf::RenderWindow& renderWindow, sf::Event& cur
 	DrawStatMenu(renderWindow, currentEvent, player, newEvent);
 	DrawHUD(renderWindow, currentEvent, player, sf::Vector2f(792, 70), false);
 
-	if (_movingInventory || _movingStatMenu)
+	if (_movingInventory || _movingStatMenu
+		|| _mouseInInvent || _mouseInStats || _mouseInHUD)
 		_movingGUI = true;
 	else
 		_movingGUI = false;
@@ -258,9 +263,10 @@ void GuiObjectManager::DrawHUD(sf::RenderWindow& renderWindow, sf::Event current
 		if (currentEvent.type == sf::Event::MouseButtonPressed)
 		{
 			if (!_movingInventory && !_movingStatMenu)
-			_moving_player_HUD = true;
+				_moving_player_HUD = true;
 		}
 	}
+
 	if (currentEvent.type == sf::Event::MouseButtonReleased)
 		_moving_player_HUD = false;
 
@@ -279,7 +285,7 @@ void GuiObjectManager::DrawHUD(sf::RenderWindow& renderWindow, sf::Event current
 			Get("ahud")->SetPosition(Get("ahud")->GetPosition().x, 0);
 
 	}
-	Get("ahud")->SetPosition(HUDpos);
+	//Get("ahud")->SetPosition(HUDpos);
 	Get("ahud selected")->SetPosition(Get("ahud")->GetPosition());
 	int hp_pos_x = Get("ahud")->GetPosition().x + 76;
 	int mp_pos_x = hp_pos_x;
@@ -351,7 +357,7 @@ void GuiObjectManager::DrawStatMenu(sf::RenderWindow& renderWindow, sf::Event& c
 			if (currentEvent.type == sf::Event::MouseButtonPressed)
 			{
 				if (!_movingInventory && !_moving_player_HUD)
-				_movingStatMenu = true;
+					_movingStatMenu = true;
 			}
 		}
 		if (currentEvent.type == sf::Event::MouseButtonReleased)
@@ -399,7 +405,17 @@ void GuiObjectManager::DrawStatMenu(sf::RenderWindow& renderWindow, sf::Event& c
 			DrawStatButton(renderWindow, currentEvent, player, pos_x, pos_y + 100, Stats::stam);
 		}
 		//renderWindow.draw(testShape);
+
+		sf::Rect<float> statBoundingRect(Get("stat menu")->GetPosition(), sf::Vector2f(Get("stat menu")->GetWidth() * 2.0f, Get("stat menu")->GetHeight() * 2.0f));
+		if (statBoundingRect.contains(sf::Mouse::getPosition(renderWindow).x, sf::Mouse::getPosition(renderWindow).y))
+		{
+			_mouseInStats = true;
+		}
+		else
+			_mouseInStats = false;
 	}
+	else
+		_mouseInStats = false;
 }
 
 void GuiObjectManager::DrawStatButton(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player, int posx, int posy, int stat)
@@ -489,6 +505,8 @@ void GuiObjectManager::DrawMonsterHUD(sf::RenderWindow& renderWindow, Monster& m
 
 bool GuiObjectManager::DrawInventory(sf::RenderWindow& renderWindow, sf::Event currentEvent, Player& player, bool newEvent)
 {
+	sf::Rect<float> inventBoundingRect(Get("inventory")->GetPosition(), sf::Vector2f(Get("inventory")->GetWidth() * 2.0f, Get("inventory")->GetHeight() * 2.0f));
+
 	if (currentEvent.type == sf::Event::KeyReleased
 		&& currentEvent.key.code == sf::Keyboard::I
 		&& newEvent)
@@ -507,7 +525,7 @@ bool GuiObjectManager::DrawInventory(sf::RenderWindow& renderWindow, sf::Event c
 			if (currentEvent.type == sf::Event::MouseButtonPressed)
 			{
 				if (!_moving_player_HUD)
-				_movingInventory = true;
+					_movingInventory = true;
 			}
 		}
 		if (currentEvent.type == sf::Event::MouseButtonReleased)
@@ -543,17 +561,29 @@ bool GuiObjectManager::DrawInventory(sf::RenderWindow& renderWindow, sf::Event c
 			player.GetInventory()[i]->Draw(renderWindow);
 			if (item_count == 4)
 			{
-				item_pos_y += 2;
+				item_pos_y += 35;
 				item_count = 0;
 			}
-			item_count++;
+			else
+				item_count++;
 		}
 
 		UseItemButton(renderWindow, currentEvent, player);
 		DropItemButton(renderWindow, currentEvent, player);
 		DrawEquippedItems(renderWindow, player);
-		DrawItemStats(renderWindow, currentEvent, player);
+		DrawItemStats(renderWindow, currentEvent, player, newEvent);
+
+		if (inventBoundingRect.contains(sf::Mouse::getPosition(renderWindow).x, sf::Mouse::getPosition(renderWindow).y))
+		{
+			_mouseInInvent = true;
+		}
+		else
+			_mouseInInvent = false;
 	}
+	else
+		_mouseInInvent = false;
+
+
 	return _inventory_is_drawn;
 }
 
@@ -580,7 +610,7 @@ bool GuiObjectManager::movingGUI()
 	return _movingGUI;
 }
 
-void GuiObjectManager::DrawItemStats(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player)
+void GuiObjectManager::DrawItemStats(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player, bool newEvent)
 {
 	sf::Text itemName("", Game::font);
 	sf::Text itemStats("", Game::font);
@@ -589,6 +619,8 @@ void GuiObjectManager::DrawItemStats(sf::RenderWindow& renderWindow, sf::Event& 
 	std::stringstream ss;
 	
 	bool mouseOverItem = false; 
+	bool clickedinvent = false;
+	bool clickedequip = false;
 
 	// Manage Inventory
 	for (int i = 0; i < player.GetInventory().size(); i++)
@@ -598,8 +630,9 @@ void GuiObjectManager::DrawItemStats(sf::RenderWindow& renderWindow, sf::Event& 
 			mouseOverItem = true;
 
 			// If an item is clicked draw a yellow box around it, indicating it is selected.
-			if (currentEvent.type == sf::Event::MouseButtonReleased)
+			if (currentEvent.type == sf::Event::MouseButtonReleased && newEvent)
 			{
+				clickedinvent = true;
 				if (mSelectedItem == player.GetInventory()[i])
 				{
 					player.EquipItem(*player.GetInventory()[i]);
@@ -684,8 +717,9 @@ void GuiObjectManager::DrawItemStats(sf::RenderWindow& renderWindow, sf::Event& 
 				mouseOverItem = true;
 
 				// If an item is clicked draw a yellow box around it, indicating it is selected.
-				if (currentEvent.type == sf::Event::MouseButtonReleased)
+				if (currentEvent.type == sf::Event::MouseButtonReleased && newEvent)
 				{
+					clickedequip = true;
 					if (mSelectedItem == player.GetEquipment()[k])
 					{
 						player.UnequipItem(k);

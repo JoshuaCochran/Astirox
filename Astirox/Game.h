@@ -56,7 +56,7 @@ public:
 	static sf::Font font;
 	static void wordWrap(std::string text);
 
-	static std::stack<path_element*> player_path;
+	//static std::stack<path_element*> player_path;
 
 private:
 	static bool IsExiting();

@@ -42,6 +42,8 @@ public:
 private:
 	int sizeInParty;
 
+	void update_map_pos(sf::Vector2f previous, sf::Vector2f target);
+
 	sf::Sprite selectedSprite;
 };
 

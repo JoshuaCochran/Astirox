@@ -161,7 +161,7 @@ Map::Map(std::string filename)
 	}
 
 	//Spawn Monsters
-	sf::Vector2f spawnZone(16 * 4.0f, 16 * 4.0f);
+	//sf::Vector2f spawnZone(16 * 4.0f, 16 * 4.0f);
 	for (auto layer = GetMapLoader().GetLayers().begin(); layer != GetMapLoader().GetLayers().end(); ++layer)
 	{
 		if (layer->name == "MonsterSpawn")
@@ -186,13 +186,13 @@ Map::Map(std::string filename)
 						++mobMax;
 						double rarity = boost::lexical_cast<int>(object->GetPropertyString("rarity"));
 
-						CheckSpawnIntersection(object, rarity, checked);
+						double totalRarity = CheckSpawnIntersection(object, rarity, checked);
 						spawnCandidates.push_back(object->GetName());
 						candidateRarities.push_back(boost::lexical_cast<double>(object->GetPropertyString("rarity")));
 							
 						for (int i = 0; i < candidateRarities.size(); i++)
 						{
-							candidateRarities[i] = candidateRarities[i] / rarity;
+							candidateRarities[i] = candidateRarities[i] / totalRarity;//rarity;
 						}
 							
 						boost::random::discrete_distribution<> dist(candidateRarities.begin(), candidateRarities.end());
@@ -289,9 +289,10 @@ tmx::MapLoader& Map::GetMapLoader()
 	return mapLoader;
 }
 
-bool Map::CheckSpawnIntersection(std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject>>::_Val_types>::_Myt>& mo, double& totalRarity, std::vector<std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject >> ::_Val_types>::_Myt >>& alreadyChecked)
+double Map::CheckSpawnIntersection(std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject>>::_Val_types>::_Myt>& mo, double& totalRarity, std::vector<std::_Vector_iterator<std::_Vector_val<std::_Vec_base_types<tmx::MapObject, std::allocator<tmx::MapObject >> ::_Val_types>::_Myt >>& alreadyChecked)
 {
 	bool newIntersection = false;
+	sf::Rect<float> spawnZone(sf::Vector2f(mo->GetPosition().x - 32, mo->GetPosition().y - 32), sf::Vector2f(80, 80));
 	
 	for (auto layer = GetMapLoader().GetLayers().begin(); layer != GetMapLoader().GetLayers().end(); ++layer)
 	{
@@ -301,7 +302,7 @@ bool Map::CheckSpawnIntersection(std::_Vector_iterator<std::_Vector_val<std::_Ve
 			{
 				if (object->GetName() != "" && object->GetPropertyString("rarity") != "")
 				{
-					if (object->Contains(mo->GetPosition()) && mo != object)
+					if (spawnZone.contains(object->GetPosition()) && mo != object)//object->Contains(mo->GetPosition()) && mo != object)
 					{
 						if (alreadyChecked.size() == 0) newIntersection = true;
 						else
@@ -321,13 +322,14 @@ bool Map::CheckSpawnIntersection(std::_Vector_iterator<std::_Vector_val<std::_Ve
 						candidateRarities.push_back(boost::lexical_cast<int>(object->GetPropertyString("rarity")));
 						alreadyChecked.push_back(object);
 						totalRarity += boost::lexical_cast<int>(object->GetPropertyString("rarity"));
-						if (alreadyChecked.size() < layer->objects.size()) CheckSpawnIntersection(mo, totalRarity, alreadyChecked);
+						std::cout << "Object name: " << object->GetName() << "\nRarity: " << object->GetPropertyString("rarity") << "\n";
 					}
 				}
 			}
 		}
 	}
-	return true;
+	std::cout << "TotalRarity: " << totalRarity << std::endl;
+	return totalRarity;
 }
 
 void Map::DrawAll(sf::RenderWindow& renderWindow)
@@ -366,7 +368,7 @@ void Map::DrawAll(sf::RenderWindow& renderWindow)
 				}
 
 				
-				/*//The position of the mouse in pixels
+				//The position of the mouse in pixels
 				sf::Vector2i pixelPos = sf::Mouse::getPosition(renderWindow);
 
 				//The position of the mouse converted to window coordinates adjusted to the view
@@ -375,22 +377,20 @@ void Map::DrawAll(sf::RenderWindow& renderWindow)
 				worldPos.x = worldPos.x - ((int)worldPos.x % 16);
 				worldPos.y = worldPos.y - ((int)worldPos.y % 16);
 
-				draw_select_tile(worldPos.x, worldPos.y, renderWindow);//*/
+				draw_select_tile(worldPos.x, worldPos.y, renderWindow);
 			}
 		}
 	}
-	for (int j = 0; j < 48; j++)
+	/*for (int j = 0; j < 48; j++)
 	{
 		for (int i = 0; i < 64; i++)
 		{
-
-
 			if (tile_map[i][j].on_path)
 			{
 				draw_select_tile(i * 16, j * 16, renderWindow);
 			}
 		}
-	}
+	}*/
 }
 
 void Map::UpdateMonsters()
@@ -560,7 +560,11 @@ void Map::draw_select_tile(unsigned int x, unsigned int y, sf::RenderWindow& ren
 
 void Map::set_map(sf::Vector2f point, std::string str)
 {
-	tile_map[(int)point.x / 16][(int)point.y / 16].object_type = str;
+	if ((((int)point.x / 16) < MAP_WIDTH_IN_TILES) && ((int)point.y / 16) < MAP_HEIGHT_IN_TILES
+		&& point.x > 0 && point.y > 0)
+	{
+		tile_map[(int)point.x / 16][(int)point.y / 16].object_type = str;
+	}
 }
 
 void Map::draw_map()
@@ -605,13 +609,14 @@ bool Map::is_wall(sf::Vector2f point)
 	if ((((int)point.x / 16) < MAP_WIDTH_IN_TILES) && ((int)point.y / 16) < MAP_HEIGHT_IN_TILES
 		&& point.x > 0 && point.y > 0)
 	{
-		//if (((int)point.x / 16)*((int)point.y / 16) 
 		//If the tile at the x coord and y coord of point is an opaque wall, denoted #, or a non-opaque wall, denoted ',' , return true
 		if (tile_map[(int)point.x / 16][(int)point.y / 16].object_type == "#"
 			|| tile_map[(int)point.x / 16][(int)point.y / 16].object_type == ",")
 			return true;
+		else
+			return false;
 	}
-	else return false;
+	else return true;
 }
 
 /*
@@ -658,6 +663,22 @@ bool Map::is_player(sf::Vector2f point)
 Monster* Map::get_monster_at(sf::Vector2f point)
 {
 	return tile_map[(int)point.x / 16][(int)point.y / 16].monster;
+}
+
+void Map::monster_moved(sf::Vector2f from, sf::Vector2f to)
+{
+	if ((((int)from.x / 16) < MAP_WIDTH_IN_TILES) && ((int)from.y / 16) < MAP_HEIGHT_IN_TILES
+		&& from.x > 0 && from.y > 0)
+	{
+		if ((((int)to.x / 16) < MAP_WIDTH_IN_TILES) && ((int)to.y / 16) < MAP_HEIGHT_IN_TILES
+			&& to.x > 0 && to.y > 0)
+		{
+			tile_map[(int)to.x / 16][(int)to.y / 16].monster = tile_map[(int)from.x / 16][(int)from.y / 16].monster;
+			tile_map[(int)from.x / 16][(int)from.y / 16].monster = NULL;
+			tile_map[(int)to.x / 16][(int)to.y / 16].object_type = "m";
+			tile_map[(int)from.x / 16][(int)from.y / 16].object_type = ".";
+		}
+	}
 }
 
 int Map::get_fog_width() const
@@ -766,9 +787,9 @@ void Map::do_fov(uint x, uint y, uint radius) {
 	Output:
 	None
 */
-void Map::Astar(sf::Vector2f start, sf::Vector2f goal)
+void Map::Astar(sf::Vector2f start, sf::Vector2f goal, Entity& entity)
 {
-	resetPlayerPath();
+	resetPath(entity);
 
 	if (is_wall(goal))
 		return;
@@ -951,8 +972,8 @@ void Map::Astar(sf::Vector2f start, sf::Vector2f goal)
 		{
 			//Mark the nav tile as being on the path from start to goal
 			set_on_path(nav->pos, true);
-			//Add the nav path_element to the Game::player_path stack
-			Game::player_path.push(nav);
+			//Add the nav path_element to the entity's move_path stack
+			entity.getMovePath().push(nav);
 			//Make nav point to its parent
 			nav = nav->parent;
 		}
@@ -1007,32 +1028,56 @@ int Map::heuristic_cost_estimate(sf::Vector2f start, sf::Vector2f goal)
 
 bool Map::on_closed(sf::Vector2f point)
 {
-	return tile_map[(int)point.x / 16][(int)point.y / 16].on_closed;
+	if ((((int)point.x / 16) < MAP_WIDTH_IN_TILES) && ((int)point.y / 16) < MAP_HEIGHT_IN_TILES
+		&& point.x > 0 && point.y > 0)
+	{
+		return tile_map[(int)point.x / 16][(int)point.y / 16].on_closed;
+	}
 }
 
 void Map::set_closed(sf::Vector2f point, bool closed)
 {
-	tile_map[(int)point.x / 16][(int)point.y / 16].on_closed = closed;
+	if ((((int)point.x / 16) < MAP_WIDTH_IN_TILES) && ((int)point.y / 16) < MAP_HEIGHT_IN_TILES
+		&& point.x > 0 && point.y > 0)
+	{
+		tile_map[(int)point.x / 16][(int)point.y / 16].on_closed = closed;
+	}
 }
 
 bool Map::on_open(sf::Vector2f point)
 {
-	return tile_map[(int)point.x / 16][(int)point.y / 16].on_open;
+	if ((((int)point.x / 16) < MAP_WIDTH_IN_TILES) && ((int)point.y / 16) < MAP_HEIGHT_IN_TILES
+		&& point.x > 0 && point.y > 0)
+	{
+		return tile_map[(int)point.x / 16][(int)point.y / 16].on_open;
+	}
 }
 
 void Map::set_open(sf::Vector2f point, bool closed)
 {
-	tile_map[(int)point.x / 16][(int)point.y / 16].on_open = closed;
+	if ((((int)point.x / 16) < MAP_WIDTH_IN_TILES) && ((int)point.y / 16) < MAP_HEIGHT_IN_TILES
+		&& point.x > 0 && point.y > 0)
+	{
+		tile_map[(int)point.x / 16][(int)point.y / 16].on_open = closed;
+	}
 }
 
 void Map::set_on_path(sf::Vector2f point, bool trulse)
 {
-	tile_map[(int)point.x / 16][(int)point.y / 16].on_path = trulse;
+	if ((((int)point.x / 16) < MAP_WIDTH_IN_TILES) && ((int)point.y / 16) < MAP_HEIGHT_IN_TILES
+		&& point.x > 0 && point.y > 0)
+	{
+		tile_map[(int)point.x / 16][(int)point.y / 16].on_path = trulse;
+	}
 }
 
 bool Map::on_path(sf::Vector2f point)
 {
-	return tile_map[(int)point.x / 16][(int)point.y / 16].on_path;
+	if ((((int)point.x / 16) < MAP_WIDTH_IN_TILES) && ((int)point.y / 16) < MAP_HEIGHT_IN_TILES
+		&& point.x > 0 && point.y > 0)
+	{
+		return tile_map[(int)point.x / 16][(int)point.y / 16].on_path;
+	}
 }
 
 /*
@@ -1043,13 +1088,9 @@ bool Map::on_path(sf::Vector2f point)
 	Output:
 	none
 */
-void Map::resetPlayerPath()
+void Map::resetPath(Entity& entity)
 {
-	while (!Game::player_path.empty())
-	{
-		delete Game::player_path.top();
-		Game::player_path.pop();
-	}
+	entity.clearMovePath();
 
 	for (int j = 0; j < 48; j++)
 	{

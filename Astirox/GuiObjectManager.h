@@ -29,7 +29,7 @@ public:
 	bool DrawInventory(sf::RenderWindow& renderWindow, sf::Event currentEvent, Player& player, bool newEvent);
 	void DrawStatMenu(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player, bool newEvent);
 	void DrawStatButton(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player, int posx, int posy, int stat);
-	void DrawItemStats(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player);
+	void DrawItemStats(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player, bool newEvent);
 	void DrawEquippedItems(sf::RenderWindow& renderWindow, Player& player);
 	void UseItemButton(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player);
 	void DropItemButton(sf::RenderWindow& renderWindow, sf::Event& currentEvent, Player& player);
@@ -61,6 +61,9 @@ private:
 	bool _statmenu_is_drawn;
 	bool _movingStatMenu;
 	bool _movingGUI;
+	bool _mouseInInvent;
+	bool _mouseInStats;
+	bool _mouseInHUD;
 
 	bool _moving_player_HUD;
 

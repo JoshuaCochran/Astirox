@@ -82,3 +82,17 @@ bool Entity::isfriendly()
 {
 	return friendly;
 }
+
+std::stack<path_element*>& Entity::getMovePath()
+{
+	return move_path;
+}
+
+void Entity::clearMovePath()
+{
+	while (!move_path.empty())
+	{
+		delete move_path.top();
+		move_path.pop();
+	}
+}

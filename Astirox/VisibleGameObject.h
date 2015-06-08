@@ -1,6 +1,7 @@
 #ifndef _VISIBLEGAMEOBJECT_H
 #define _VISIBLEGAMEOBJECT_H
 
+
 class VisibleGameObject
 {
 public:

@@ -148,11 +148,11 @@ void Game::GameLoop()
 			currentMap->UpdateMonsters();
 			currentMap->CheckSpawn();
 		}
-		else if (!Game::player_path.empty())
+		else if (!player->getMovePath().empty())
 		{
-			Game::player->move(player_path.top()->pos.x - player->GetPosition().x, player_path.top()->pos.y - player->GetPosition().y);
-			delete player_path.top();
-			player_path.pop();
+			Game::player->move(player->getMovePath().top()->pos.x - player->GetPosition().x, player->getMovePath().top()->pos.y - player->GetPosition().y);
+			delete player->getMovePath().top();
+			player->getMovePath().pop();
 
 			currentMap->UpdateMonsters();
 		}
@@ -160,6 +160,7 @@ void Game::GameLoop()
 
 		Game::view.setCenter(player->GetPosition().x, player->GetPosition().y);
 		_mainWindow.setView(view);
+
 		
 		currentMap->DrawAll(_mainWindow);
 		player->Draw(_mainWindow);
@@ -377,4 +378,4 @@ sf::View Game::view;
 sf::Clock Game::frameTime;
 sf::Event Game::_currentEvent;
 Command* Game::command;
-std::stack<path_element*> Game::player_path;
+//std::stack<path_element*> Game::player_path;
