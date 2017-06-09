@@ -3,7 +3,7 @@
 #include "Game.h"
 #include "Monster.h"
 #include "Equipment.hpp"
-//test
+//test1
 Battle::Battle(std::vector<Player*>& playerParty, std::vector<Monster*>& monsterParty, bool ambush)
 {
 	monsterPos = monsterParty[0]->GetPosition();
