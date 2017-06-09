@@ -8,7 +8,7 @@ Battle::Battle(std::vector<Player*>& playerParty, std::vector<Monster*>& monster
 {
 	monsterPos = monsterParty[0]->GetPosition();
 	m_monsterParty = monsterParty;
-	for (int i = 1; i < monsterParty.size(); i++)
+	for (int i = 0; i < monsterParty.size(); i++)
 	{
 		monsterParty[i]->SetPosition(Game::SCREEN_WIDTH / 2 - 200 + (48 * i),
 			Game::SCREEN_HEIGHT / 2 + 96 - (48 * i));
